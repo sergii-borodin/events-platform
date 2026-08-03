@@ -411,7 +411,7 @@ void main() {
   return (
     <div
       ref={containerRef}
-      className={`light-rays-container ${className}`.trim()}
+      className={`light-rays-container relative h-full w-full overflow-hidden ${className}`.trim()}
     />
   );
 };
