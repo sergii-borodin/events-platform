@@ -167,8 +167,66 @@
       }
     }
 
+    .nav-end {
+      @apply flex flex-row items-center gap-6;
+    }
+
     ul {
       @apply flex flex-row items-center gap-6;
+    }
+
+    .auth-nav {
+      @apply relative flex shrink-0 flex-row items-center;
+    }
+
+    .auth-nav__skeleton {
+      @apply h-10 w-10 rounded-full border border-white/10 bg-white/5;
+    }
+
+    .auth-nav__login {
+      @apply border-dark-200 bg-dark-100 inline-flex cursor-pointer items-center rounded-full border px-5 py-2 text-sm font-medium transition-colors hover:border-primary hover:text-primary;
+    }
+
+    .auth-nav__trigger {
+      @apply flex-center h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-white/30 bg-white/5 transition-all duration-200 hover:border-white/70 hover:shadow-[0_0_0_4px_rgba(255,255,255,0.06)] focus-visible:border-white/80 focus-visible:outline-none;
+    }
+
+    .auth-nav__avatar-image {
+      @apply h-full w-full object-cover;
+    }
+
+    .auth-nav__avatar-initials {
+      @apply text-sm font-semibold tracking-wide text-white;
+    }
+
+    .auth-nav__menu {
+      @apply absolute right-0 top-[calc(100%+0.75rem)] z-50 flex w-60 origin-top-right flex-col overflow-hidden rounded-2xl border border-white/30 bg-[#0d1116]/80 p-1.5 backdrop-blur-2xl;
+      box-shadow: 0 20px 50px -12px #000000cc;
+      animation: auth-menu-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .auth-nav__identity {
+      @apply flex flex-col gap-0.5 px-3 py-2.5;
+    }
+
+    .auth-nav__name {
+      @apply truncate text-sm font-semibold text-white;
+    }
+
+    .auth-nav__email {
+      @apply text-light-200 truncate text-xs;
+    }
+
+    .auth-nav__divider {
+      @apply my-1.5 h-px w-full bg-white/15;
+    }
+
+    .auth-nav__item {
+      @apply w-full cursor-pointer rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-white/10;
+    }
+
+    .auth-nav__item--muted {
+      @apply text-light-200 hover:text-white;
     }
   }
 
@@ -405,5 +463,16 @@
   100% {
     transform: scaleX(0.75);
     opacity: 0.1;
+  }
+}
+
+@keyframes auth-menu-in {
+  from {
+    transform: translateY(-6px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
   }
 }
