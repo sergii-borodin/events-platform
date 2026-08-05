@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Schibsted_Grotesk, Martian_Mono } from "next/font/google";
 import LightRays from "./components/LightRays";
 import "./globals.css";
@@ -48,7 +49,16 @@ export default function RootLayout({
           />
         </div>
         <AuthProvider>
-          <NavBar />
+          <Suspense
+            fallback={
+              <header>
+                <nav>
+                  <div className="auth-nav auth-nav__skeleton" aria-hidden="true" />
+                </nav>
+              </header>
+            }>
+            <NavBar />
+          </Suspense>
           <main>{children}</main>
         </AuthProvider>
       </body>

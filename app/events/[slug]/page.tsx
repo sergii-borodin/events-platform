@@ -1,4 +1,6 @@
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Image from "next/image";
 import BookEvent from "@/app/components/BookEvent";
 import SimilarEventCard from "@/app/components/SimilarEventCard";
@@ -36,11 +38,52 @@ const formatEventDate = (date: string | Date): string => {
 const formatVenueType = (venueType: string): string =>
   venueType.charAt(0).toUpperCase() + venueType.slice(1);
 
-const EventDetailsPage = async ({
+const getGameTimeRange = (
+  startTime: string,
+  durationMinutes: number,
+): string => {
+  const [startHours, startMinutes] = startTime.split(":").map(Number);
+
+  const totalStartMinutes = startHours * 60 + startMinutes;
+  const totalEndMinutes = totalStartMinutes + durationMinutes;
+
+  const endHours = Math.floor(totalEndMinutes / 60);
+  const endMinutes = totalEndMinutes % 60;
+
+  const pad = (n: number): string => String(n).padStart(2, "0");
+
+  return `${startTime} – ${pad(endHours)}:${pad(endMinutes)}`;
+};
+
+function EventDetailsSkeleton() {
+  return (
+    <section id="event" aria-busy="true" aria-label="Loading event">
+      <div className="header">
+        <h1 className="h-8 w-2/3 animate-pulse rounded bg-white/10" />
+        <p className="mt-2 h-4 w-full animate-pulse rounded bg-white/10" />
+      </div>
+    </section>
+  );
+}
+
+const EventDetailsPage = ({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}) => {
+}) => (
+  <Suspense fallback={<EventDetailsSkeleton />}>
+    <EventDetailsContent params={params} />
+  </Suspense>
+);
+
+async function EventDetailsContent({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  "use cache";
+  cacheLife("minutes");
+
   const { slug } = await params;
   const event = await getEventBySlug(slug);
 
@@ -65,23 +108,6 @@ const EventDetailsPage = async ({
     tags,
     duration,
   } = event;
-
-  const getGameTimeRange = (
-    startTime: string,
-    durationMinutes: number,
-  ): string => {
-    const [startHours, startMinutes] = startTime.split(":").map(Number);
-
-    const totalStartMinutes = startHours * 60 + startMinutes;
-    const totalEndMinutes = totalStartMinutes + durationMinutes;
-
-    const endHours = Math.floor(totalEndMinutes / 60);
-    const endMinutes = totalEndMinutes % 60;
-
-    const pad = (n: number): string => String(n).padStart(2, "0");
-
-    return `${startTime} – ${pad(endHours)}:${pad(endMinutes)}`;
-  };
 
   const bookings = bookingsCount;
   const similarEvents: IEvent[] = await getSimilarEventBySlug(slug);
@@ -211,6 +237,6 @@ const EventDetailsPage = async ({
       )}
     </>
   );
-};
+}
 
 export default EventDetailsPage;
