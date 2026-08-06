@@ -8,6 +8,7 @@ import {
   getEventBySlug,
   getSimilarEventBySlug,
 } from "@/lib/actions/event.actions";
+import { getEventParticipants } from "@/lib/actions/booking.actions";
 import { IEvent } from "@/database/event.model";
 
 const EventDetailItem = ({
@@ -53,6 +54,20 @@ const getGameTimeRange = (
   const pad = (n: number): string => String(n).padStart(2, "0");
 
   return `${startTime} – ${pad(endHours)}:${pad(endMinutes)}`;
+};
+
+const getParticipantName = (firstName: string, lastName: string): string =>
+  [firstName, lastName].filter(Boolean).join(" ").trim() || "Participant";
+
+const getParticipantInitials = (firstName: string, lastName: string): string => {
+  const first = firstName.trim();
+  const last = lastName.trim();
+
+  if (first && last) return (first[0] + last[0]).toUpperCase();
+  if (first) return first.slice(0, 2).toUpperCase();
+  if (last) return last.slice(0, 2).toUpperCase();
+
+  return "?";
 };
 
 function EventDetailsSkeleton() {
@@ -110,7 +125,10 @@ async function EventDetailsContent({
   } = event;
 
   const bookings = bookingsCount;
-  const similarEvents: IEvent[] = await getSimilarEventBySlug(slug);
+  const [similarEvents, participants] = await Promise.all([
+    getSimilarEventBySlug(slug),
+    getEventParticipants(_id),
+  ]);
 
   return (
     <>
@@ -209,6 +227,54 @@ async function EventDetailsContent({
                 <p className="text-red-500">No available spots left</p>
               )}
             </div>
+
+            {participants.length > 0 && (
+              <section
+                className="participants-card"
+                aria-labelledby="participants-heading">
+                <div className="participants-card__header">
+                  <div>
+                    <h2 id="participants-heading">Signed up</h2>
+                    <p className="participants-card__subtitle">
+                      Players ready for the tournament
+                    </p>
+                  </div>
+                  <span className="participants-card__count">
+                    {participants.length}
+                  </span>
+                </div>
+
+                <button type="button" className="button-start-tournament">
+                  Start tournament
+                </button>
+
+                <ul className="participants-list">
+                  {participants.map((participant, index) => {
+                    const name = getParticipantName(
+                      participant.firstName,
+                      participant.lastName,
+                    );
+
+                    return (
+                      <li key={participant.id} className="participant-item">
+                        <span className="participant-item__index">
+                          {index + 1}
+                        </span>
+                        <span
+                          className="participant-item__avatar"
+                          aria-hidden="true">
+                          {getParticipantInitials(
+                            participant.firstName,
+                            participant.lastName,
+                          )}
+                        </span>
+                        <span className="participant-item__name">{name}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
           </aside>
         </div>
       </section>

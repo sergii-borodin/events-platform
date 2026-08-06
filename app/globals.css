@@ -285,10 +285,54 @@
       }
 
       .booking {
-        @apply flex-1 w-full p-4 border-l border-gray-700;
+        @apply flex flex-1 w-full flex-col gap-8 p-4 border-l border-gray-700;
 
         .signup-card {
           @apply bg-dark-100 border-dark-200 card-shadow flex w-full flex-col gap-6 rounded-[10px] border px-5 py-6;
+        }
+
+        .participants-card {
+          @apply bg-dark-100 border-dark-200 card-shadow flex w-full flex-col gap-5 rounded-[10px] border px-5 py-6;
+
+          .participants-card__header {
+            @apply flex items-start justify-between gap-4;
+
+            h2 {
+              @apply font-schibsted-grotesk text-lg font-semibold text-light-100;
+            }
+          }
+
+          .participants-card__subtitle {
+            @apply text-light-200 mt-1 text-sm font-light;
+          }
+
+          .participants-card__count {
+            @apply bg-primary/15 text-primary flex-center h-9 min-w-9 shrink-0 rounded-full px-2.5 text-sm font-semibold;
+          }
+
+          .button-start-tournament {
+            @apply bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-[6px] px-4 py-2.5 text-base font-semibold text-black transition-colors;
+          }
+
+          .participants-list {
+            @apply flex max-h-72 flex-col gap-2 overflow-y-auto border-t border-white/10 pt-4;
+
+            .participant-item {
+              @apply bg-dark-200/70 hover:border-primary/30 flex items-center gap-3 rounded-[8px] border border-transparent px-3 py-2.5 transition-colors;
+
+              .participant-item__index {
+                @apply text-light-200 w-5 shrink-0 text-xs font-medium tabular-nums;
+              }
+
+              .participant-item__avatar {
+                @apply bg-primary/15 text-primary flex-center h-9 w-9 shrink-0 rounded-full text-xs font-semibold tracking-wide;
+              }
+
+              .participant-item__name {
+                @apply text-light-100 min-w-0 flex-1 truncate text-sm font-medium;
+              }
+            }
+          }
         }
       }
     }

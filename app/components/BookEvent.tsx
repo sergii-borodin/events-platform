@@ -7,6 +7,8 @@ import posthog from "posthog-js";
 import PadelCatcherLoader from "@/app/components/PadelCatcherLoader";
 
 const BookEvent = ({ eventId, slug }: { eventId: string; slug: string }) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +35,13 @@ const BookEvent = ({ eventId, slug }: { eventId: string; slug: string }) => {
     setSubmitting(true);
 
     try {
-      const result = await createBooking({ eventId, email, slug });
+      const result = await createBooking({
+        eventId,
+        firstName,
+        lastName,
+        email,
+        slug,
+      });
 
       if (result.success) {
         setSubmitted(true);
@@ -56,6 +64,32 @@ const BookEvent = ({ eventId, slug }: { eventId: string; slug: string }) => {
         <p className="text-sm">Thank you for signing up!</p>
       ) : (
         <form onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="firstName">Name</label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              id="firstName"
+              placeholder="Enter your name"
+              disabled={submitting}
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="lastName">Surname</label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              id="lastName"
+              placeholder="Enter your surname"
+              disabled={submitting}
+              required
+            />
+          </div>
+
           <div>
             <label htmlFor="email">Email Address</label>
             <input

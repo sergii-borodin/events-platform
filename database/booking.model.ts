@@ -13,6 +13,8 @@ import {
 
 export interface IBooking {
   eventId: Types.ObjectId;
+  firstName: string;
+  lastName: string;
   email: string;
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +35,18 @@ const bookingSchema = new Schema<IBooking, BookingModel>(
       ref: "Event",
       required: [true, "eventId is required."],
       index: true,
+    },
+
+    firstName: {
+      type: String,
+      required: [true, "firstName is required."],
+      trim: true,
+    },
+
+    lastName: {
+      type: String,
+      required: [true, "lastName is required."],
+      trim: true,
     },
 
     email: {

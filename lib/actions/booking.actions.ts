@@ -24,12 +24,48 @@ const isDuplicateKeyError = (error: unknown) =>
   "code" in error &&
   (error as { code?: unknown }).code === 11000;
 
+export type EventParticipant = {
+  id: string;
+  firstName: string;
+  lastName: string;
+};
+
+export const getEventParticipants = async (
+  eventId: string,
+): Promise<EventParticipant[]> => {
+  if (!Types.ObjectId.isValid(eventId)) {
+    return [];
+  }
+
+  try {
+    await connectDB();
+
+    const bookings = await Booking.find({ eventId: new Types.ObjectId(eventId) })
+      .select("firstName lastName")
+      .sort({ createdAt: 1 })
+      .lean<Array<{ _id: unknown; firstName?: string; lastName?: string }>>();
+
+    return bookings.map((booking) => ({
+      id: String(booking._id),
+      firstName: booking.firstName?.trim() ?? "",
+      lastName: booking.lastName?.trim() ?? "",
+    }));
+  } catch (e) {
+    console.error("get event participants failed", e);
+    return [];
+  }
+};
+
 export const createBooking = async ({
   eventId,
+  firstName,
+  lastName,
   email,
   slug,
 }: {
   eventId: string;
+  firstName: string;
+  lastName: string;
   email: string;
   slug: string;
 }): Promise<CreateBookingResult> => {
@@ -38,7 +74,13 @@ export const createBooking = async ({
   }
 
   const eventObjectId = new Types.ObjectId(eventId);
+  const normalizedFirstName = firstName.trim();
+  const normalizedLastName = lastName.trim();
   const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedFirstName || !normalizedLastName) {
+    return { success: false, reason: "error" };
+  }
 
   try {
     const db = await connectDB();
@@ -83,7 +125,14 @@ export const createBooking = async ({
         );
 
         await Booking.create(
-          [{ eventId: eventObjectId, email: normalizedEmail }],
+          [
+            {
+              eventId: eventObjectId,
+              firstName: normalizedFirstName,
+              lastName: normalizedLastName,
+              email: normalizedEmail,
+            },
+          ],
           { session },
         );
 
