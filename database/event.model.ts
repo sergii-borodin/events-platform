@@ -39,8 +39,19 @@ function requireTrimmedString(value: unknown, field: string): string {
   return value.trim();
 }
 
+/** Replace Danish letters: æ→ae, ø→oe, å→aa (case-aware for titles). */
+function replaceDanishLetters(value: string): string {
+  return value
+    .replace(/æ/g, "ae")
+    .replace(/Æ/g, "Ae")
+    .replace(/ø/g, "oe")
+    .replace(/Ø/g, "Oe")
+    .replace(/å/g, "aa")
+    .replace(/Å/g, "Aa");
+}
+
 function createSlug(title: string): string {
-  return title
+  return replaceDanishLetters(title)
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -211,7 +222,7 @@ eventSchema.pre("save", async function () {
   const doc = this as HydratedDocument<IEvent>;
 
   // Sanitise and normalise fields
-  doc.title = requireTrimmedString(doc.title, "title");
+  doc.title = replaceDanishLetters(requireTrimmedString(doc.title, "title"));
   doc.description = requireTrimmedString(doc.description, "description");
   doc.overview = requireTrimmedString(doc.overview, "overview");
   doc.image = requireTrimmedString(doc.image, "image");
@@ -248,6 +259,12 @@ eventSchema.pre("save", async function () {
 /* =========================
    Model export
 ========================= */
+
+// In development, drop the cached model so schema/hook edits apply after HMR.
+// Without this, mongoose keeps the first-compiled pre-save hooks (e.g. slug logic).
+if (process.env.NODE_ENV !== "production" && models.Event) {
+  delete models.Event;
+}
 
 export const Event =
   (models.Event as EventModel | undefined) ??
