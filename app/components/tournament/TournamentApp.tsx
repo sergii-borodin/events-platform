@@ -1,0 +1,255 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import type { EventParticipant } from "@/lib/actions/booking.actions";
+import {
+  createOrUpdateTournamentSetup,
+  finishTournament,
+  generateFinalRound,
+  generateNextRound,
+  goToRound,
+  resetTournament,
+  setMatchScore,
+  startTournament,
+  type TournamentDTO,
+  type TournamentSettingsInput,
+} from "@/lib/actions/tournament.actions";
+import { computeStandings } from "@/lib/tournament";
+import RoundView from "./RoundView";
+import StandingsTable from "./StandingsTable";
+import TournamentHeader from "./TournamentHeader";
+import TournamentSetup from "./TournamentSetup";
+
+type View = "setup" | "round" | "standings";
+
+function initialView(tournament: TournamentDTO | null): View {
+  if (!tournament || tournament.status === "setup") return "setup";
+  if (tournament.status === "finished") return "standings";
+  return "round";
+}
+
+export default function TournamentApp({
+  slug,
+  eventTitle,
+  participants,
+  initialTournament,
+}: {
+  slug: string;
+  eventTitle: string;
+  participants: EventParticipant[];
+  initialTournament: TournamentDTO | null;
+}) {
+  const router = useRouter();
+  const [tournament, setTournament] = useState(initialTournament);
+  const [view, setView] = useState<View>(() => initialView(initialTournament));
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const run = (action: () => Promise<void>) => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await action();
+        router.refresh();
+      } catch {
+        setError("Something went wrong. Please try again.");
+      }
+    });
+  };
+
+  const handleStart = (settings: TournamentSettingsInput) => {
+    run(async () => {
+      const setup = await createOrUpdateTournamentSetup({ slug, settings });
+      if (!setup.success) {
+        setError(
+          setup.message ??
+            (setup.reason === "not-enough-players"
+              ? "Need at least 4 signed-up players."
+              : "Could not save tournament setup."),
+        );
+        return;
+      }
+
+      const started = await startTournament(slug);
+      if (!started.success) {
+        setError(started.message ?? "Could not start tournament.");
+        return;
+      }
+
+      setTournament(started.data);
+      setView("round");
+    });
+  };
+
+  const handleReset = () => {
+    if (
+      !window.confirm(
+        "Remove the current tournament and start a new one?",
+      )
+    ) {
+      return;
+    }
+
+    run(async () => {
+      const result = await resetTournament(slug);
+      if (!result.success) {
+        setError("Could not reset tournament.");
+        return;
+      }
+      setTournament(null);
+      setView("setup");
+    });
+  };
+
+  const handleSaveScore = async (input: {
+    roundIndex: number;
+    matchId: string;
+    teamAScore: number;
+    teamBScore: number;
+  }) => {
+    setError(null);
+    const result = await setMatchScore({ slug, ...input });
+    if (!result.success) {
+      setError(result.message ?? "Could not save score.");
+      return;
+    }
+    setTournament(result.data);
+    router.refresh();
+  };
+
+  const handleNextRound = () => {
+    run(async () => {
+      const result = await generateNextRound(slug);
+      if (!result.success) {
+        setError(result.message ?? "Could not generate next round.");
+        return;
+      }
+      setTournament(result.data);
+      setView("round");
+    });
+  };
+
+  const handleFinalRound = () => {
+    run(async () => {
+      const result = await generateFinalRound(slug);
+      if (!result.success) {
+        setError(result.message ?? "Could not generate final.");
+        return;
+      }
+      setTournament(result.data);
+      setView("round");
+    });
+  };
+
+  const handleStandings = () => {
+    setError(null);
+    setView("standings");
+  };
+
+  const handleFinish = () => {
+    run(async () => {
+      const result = await finishTournament(slug);
+      if (!result.success) {
+        setError(result.message ?? "Could not finish tournament.");
+        return;
+      }
+      setTournament(result.data);
+      setView("standings");
+    });
+  };
+
+  const handleSelectRound = (roundIndex: number) => {
+    run(async () => {
+      const result = await goToRound({ slug, roundIndex });
+      if (!result.success) {
+        setError("Could not switch round.");
+        return;
+      }
+      setTournament(result.data);
+      setView("round");
+    });
+  };
+
+  const standings =
+    tournament && tournament.rounds.length > 0
+      ? computeStandings(
+          tournament.players,
+          tournament.rounds,
+          tournament.resultSorting,
+        )
+      : [];
+
+  return (
+    <div className="tournament-app">
+      <TournamentHeader
+        eventTitle={eventTitle}
+        slug={slug}
+        tournamentType={tournament?.tournamentType}
+        pointsTo={tournament?.pointsTo}
+        onReset={tournament ? handleReset : undefined}
+        resetting={pending}
+      />
+
+      {view === "setup" && (
+        <TournamentSetup
+          participants={participants}
+          initialSettings={
+            tournament
+              ? {
+                  tournamentType: tournament.tournamentType,
+                  pointsTo: tournament.pointsTo,
+                  resultSorting: tournament.resultSorting,
+                  courts: tournament.courts,
+                }
+              : undefined
+          }
+          submitting={pending}
+          error={error}
+          onStart={handleStart}
+        />
+      )}
+
+      {view === "round" && tournament && (
+        <RoundView
+          tournament={tournament}
+          busy={pending}
+          error={error}
+          onSaveScore={handleSaveScore}
+          onNextRound={handleNextRound}
+          onFinalRound={handleFinalRound}
+          onStandings={handleStandings}
+          onSelectRound={handleSelectRound}
+        />
+      )}
+
+      {view === "standings" && tournament && (
+        <section className="tournament-standings">
+          <div className="tournament-actions">
+            {tournament.status !== "finished" && (
+              <>
+                <button
+                  type="button"
+                  className="tournament-button tournament-button--ghost"
+                  onClick={() => setView("round")}
+                  disabled={pending}>
+                  Back to rounds
+                </button>
+                <button
+                  type="button"
+                  className="tournament-button tournament-button--primary"
+                  onClick={handleFinish}
+                  disabled={pending}>
+                  {pending ? "Finishing…" : "End tournament"}
+                </button>
+              </>
+            )}
+          </div>
+          <h2>Standings</h2>
+          <StandingsTable standings={standings} />
+          {error && <p className="tournament-error">{error}</p>}
+        </section>
+      )}
+    </div>
+  );
+}

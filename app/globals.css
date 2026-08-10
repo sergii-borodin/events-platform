@@ -311,7 +311,7 @@
           }
 
           .button-start-tournament {
-            @apply bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-[6px] px-4 py-2.5 text-base font-semibold text-black transition-colors;
+            @apply bg-primary hover:bg-primary/90 inline-flex w-full cursor-pointer items-center justify-center rounded-[6px] px-4 py-2.5 text-center text-base font-semibold text-black no-underline transition-colors;
           }
 
           .participants-list {
@@ -416,6 +416,218 @@
         @apply bg-primary hover:bg-primary/90 w-full cursor-pointer items-center justify-center rounded-[6px] px-4 py-2.5 text-lg font-semibold text-black;
       }
     }
+  }
+
+  #tournament {
+    @apply mx-auto w-full max-w-5xl px-4 py-8 sm:px-6;
+  }
+
+  .tournament-app {
+    @apply flex flex-col gap-8;
+  }
+
+  .tournament-header {
+    @apply flex flex-col gap-2 border-b border-white/10 pb-6;
+
+    h1 {
+      @apply font-schibsted-grotesk text-3xl font-bold text-light-100;
+    }
+  }
+
+  .tournament-header__top {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .tournament-header__meta {
+    @apply text-light-200 text-sm;
+  }
+
+  .tournament-back {
+    @apply text-primary text-sm font-medium no-underline hover:underline;
+  }
+
+  .tournament-panel {
+    @apply bg-dark-100 border-dark-200 card-shadow flex flex-col gap-6 rounded-[10px] border px-5 py-6;
+  }
+
+  .tournament-panel__subtitle {
+    @apply text-light-200 -mt-3 text-sm;
+  }
+
+  .tournament-fieldset {
+    @apply flex flex-col gap-3 border-0 p-0;
+
+    legend {
+      @apply font-schibsted-grotesk mb-1 text-base font-semibold text-light-100;
+    }
+  }
+
+  .tournament-options {
+    @apply flex flex-wrap gap-3;
+  }
+
+  .tournament-options--wrap {
+    @apply gap-2;
+  }
+
+  .tournament-option {
+    @apply bg-dark-200/80 border-dark-200 text-light-100 inline-flex cursor-pointer items-center gap-2 rounded-[8px] border px-3 py-2 text-sm;
+
+    input {
+      @apply accent-primary;
+    }
+  }
+
+  .tournament-court-list {
+    @apply mb-3 flex flex-col gap-2;
+
+    li {
+      @apply flex flex-wrap items-center gap-2;
+    }
+
+    input {
+      @apply bg-dark-200 text-light-100 min-w-0 flex-1 rounded-[6px] px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2;
+    }
+  }
+
+  .tournament-players-preview {
+    @apply border-t border-white/10 pt-4;
+
+    h3 {
+      @apply font-schibsted-grotesk mb-2 text-base font-semibold;
+    }
+
+    ul {
+      @apply grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2;
+    }
+
+    li {
+      @apply text-light-200 text-sm;
+    }
+
+    span {
+      @apply text-light-200/70 mr-1 tabular-nums;
+    }
+  }
+
+  .tournament-confirm {
+    @apply bg-primary/10 border-primary/30 flex flex-col gap-3 rounded-[8px] border px-4 py-3 text-sm;
+  }
+
+  .tournament-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .tournament-button {
+    @apply bg-dark-200 hover:bg-dark-200/80 text-light-100 inline-flex cursor-pointer items-center justify-center rounded-[6px] px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .tournament-button--primary {
+    @apply bg-primary hover:bg-primary/90 w-full text-base text-black sm:w-auto;
+  }
+
+  .tournament-button--ghost {
+    @apply bg-transparent hover:bg-white/5 border border-white/15;
+  }
+
+  .tournament-error {
+    @apply text-sm text-red-400;
+  }
+
+  .tournament-hint {
+    @apply text-light-200 text-xs;
+  }
+
+  .tournament-empty {
+    @apply text-light-200 text-sm;
+  }
+
+  .tournament-round__toolbar {
+    @apply mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .tournament-round-tabs {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .tournament-round-tab {
+    @apply bg-dark-200 text-light-200 cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors disabled:opacity-50;
+  }
+
+  .tournament-round-tab.is-active {
+    @apply bg-primary text-black font-semibold;
+  }
+
+  .tournament-match-list {
+    @apply mt-4 flex flex-col gap-4;
+  }
+
+  .tournament-match {
+    @apply bg-dark-100 border-dark-200 flex flex-col gap-3 rounded-[10px] border px-4 py-4;
+  }
+
+  .tournament-match__court {
+    @apply text-primary text-xs font-semibold tracking-wide uppercase;
+  }
+
+  .tournament-match__teams {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center;
+  }
+
+  .tournament-match__team {
+    @apply flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between;
+
+    span {
+      @apply text-light-100 text-sm font-medium;
+    }
+
+    input {
+      @apply bg-dark-200 text-light-100 w-20 rounded-[6px] px-3 py-2 text-center text-base outline-none ring-primary/40 focus:ring-2;
+    }
+  }
+
+  .tournament-match__vs {
+    @apply text-light-200 text-center text-xs uppercase;
+  }
+
+  .tournament-resting {
+    @apply bg-dark-100 border-dark-200 mt-6 rounded-[10px] border px-4 py-4;
+
+    h3 {
+      @apply font-schibsted-grotesk mb-1 text-base font-semibold;
+    }
+
+    p {
+      @apply text-light-200 text-sm;
+    }
+  }
+
+  .tournament-standings {
+    @apply flex flex-col gap-4;
+  }
+
+  .standings-table-wrap {
+    @apply bg-dark-100 border-dark-200 overflow-x-auto rounded-[10px] border;
+  }
+
+  .standings-table {
+    @apply w-full min-w-[320px] border-collapse text-left text-sm;
+
+    th {
+      @apply text-light-200 border-b border-white/10 px-4 py-3 font-medium;
+    }
+
+    td {
+      @apply text-light-100 border-b border-white/5 px-4 py-3;
+    }
+
+    tr:last-child td {
+      @apply border-b-0;
+    }
+  }
+
+  .standings-table__name {
+    @apply font-medium;
   }
 
   .padel-loader-stage {

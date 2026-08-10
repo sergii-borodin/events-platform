@@ -4,11 +4,13 @@ import { Suspense } from "react";
 import Image from "next/image";
 import BookEvent from "@/app/components/BookEvent";
 import SimilarEventCard from "@/app/components/SimilarEventCard";
+import StartTournamentButton from "@/app/components/StartTournamentButton";
 import {
   getEventBySlug,
   getSimilarEventBySlug,
 } from "@/lib/actions/event.actions";
 import { getEventParticipants } from "@/lib/actions/booking.actions";
+import { getTournamentStatusBySlug } from "@/lib/actions/tournament.actions";
 import { IEvent } from "@/database/event.model";
 
 const EventDetailItem = ({
@@ -125,9 +127,10 @@ async function EventDetailsContent({
   } = event;
 
   const bookings = bookingsCount;
-  const [similarEvents, participants] = await Promise.all([
+  const [similarEvents, participants, tournamentStatus] = await Promise.all([
     getSimilarEventBySlug(slug),
     getEventParticipants(_id),
+    getTournamentStatusBySlug(slug),
   ]);
 
   return (
@@ -244,9 +247,10 @@ async function EventDetailsContent({
                   </span>
                 </div>
 
-                <button type="button" className="button-start-tournament">
-                  Start tournament
-                </button>
+                <StartTournamentButton
+                  slug={slug}
+                  status={tournamentStatus}
+                />
 
                 <ul className="participants-list">
                   {participants.map((participant, index) => {
