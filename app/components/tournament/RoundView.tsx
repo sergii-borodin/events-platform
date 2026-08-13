@@ -73,14 +73,32 @@ export default function RoundView({
     side: "teamA" | "teamB",
     value: string,
   ) => {
-    setDrafts((prev) => ({
-      ...prev,
-      [matchId]: {
-        teamA: prev[matchId]?.teamA ?? "",
-        teamB: prev[matchId]?.teamB ?? "",
-        [side]: value,
-      },
-    }));
+    const trimmed = value.trim();
+
+    setDrafts((prev) => {
+      const otherSide = side === "teamA" ? "teamB" : "teamA";
+      let nextValue = trimmed;
+      let otherValue = "";
+
+      if (trimmed === "") {
+        nextValue = "";
+        otherValue = "";
+      } else if (/^\d+$/.test(trimmed)) {
+        const clamped = Math.min(Number(trimmed), tournament.pointsTo);
+        nextValue = String(clamped);
+        otherValue = String(tournament.pointsTo - clamped);
+      } else {
+        otherValue = prev[matchId]?.[otherSide] ?? "";
+      }
+
+      return {
+        ...prev,
+        [matchId]: {
+          teamA: side === "teamA" ? nextValue : otherValue,
+          teamB: side === "teamB" ? nextValue : otherValue,
+        },
+      };
+    });
   };
 
   const saveMatch = async (matchId: string) => {
