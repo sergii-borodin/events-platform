@@ -10,8 +10,9 @@ import {
   generateNextRound,
   goToRound,
   resetTournament,
-  setMatchScore,
+  setRoundScores,
   startTournament,
+  type MatchScoreInput,
   type TournamentDTO,
   type TournamentSettingsInput,
 } from "@/lib/actions/tournament.actions";
@@ -102,25 +103,9 @@ export default function TournamentApp({
     });
   };
 
-  const handleSaveScore = async (input: {
-    roundIndex: number;
-    matchId: string;
-    teamAScore: number;
-    teamBScore: number;
-  }) => {
-    setError(null);
-    const result = await setMatchScore({ slug, ...input });
-    if (!result.success) {
-      setError(result.message ?? "Could not save score.");
-      return;
-    }
-    setTournament(result.data);
-    router.refresh();
-  };
-
-  const handleNextRound = () => {
+  const handleNextRound = (scores: MatchScoreInput[]) => {
     run(async () => {
-      const result = await generateNextRound(slug);
+      const result = await generateNextRound(slug, scores);
       if (!result.success) {
         setError(result.message ?? "Could not generate next round.");
         return;
@@ -130,9 +115,9 @@ export default function TournamentApp({
     });
   };
 
-  const handleFinalRound = () => {
+  const handleFinalRound = (scores: MatchScoreInput[]) => {
     run(async () => {
-      const result = await generateFinalRound(slug);
+      const result = await generateFinalRound(slug, scores);
       if (!result.success) {
         setError(result.message ?? "Could not generate final.");
         return;
@@ -142,9 +127,23 @@ export default function TournamentApp({
     });
   };
 
-  const handleStandings = () => {
-    setError(null);
-    setView("standings");
+  const handleStandings = (scores: MatchScoreInput[] | null) => {
+    if (!scores || !tournament) {
+      setError(null);
+      setView("standings");
+      return;
+    }
+
+    const roundIndex = tournament.currentRoundIndex;
+    run(async () => {
+      const result = await setRoundScores({ slug, roundIndex, scores });
+      if (!result.success) {
+        setError(result.message ?? "Could not save scores.");
+        return;
+      }
+      setTournament(result.data);
+      setView("standings");
+    });
   };
 
   const handleFinish = () => {
@@ -215,7 +214,6 @@ export default function TournamentApp({
           tournament={tournament}
           busy={pending}
           error={error}
-          onSaveScore={handleSaveScore}
           onNextRound={handleNextRound}
           onFinalRound={handleFinalRound}
           onStandings={handleStandings}

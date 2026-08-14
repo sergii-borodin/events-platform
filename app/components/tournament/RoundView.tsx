@@ -1,16 +1,61 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { TournamentDTO } from "@/lib/actions/tournament.actions";
-import { isRoundComplete } from "@/lib/tournament";
+import type {
+  MatchScoreInput,
+  TournamentDTO,
+} from "@/lib/actions/tournament.actions";
 
 type ScoreDraft = Record<string, { teamA: string; teamB: string }>;
+
+function draftsFromRound(
+  round: TournamentDTO["rounds"][number] | undefined,
+): ScoreDraft {
+  if (!round) return {};
+  const next: ScoreDraft = {};
+  for (const match of round.matches) {
+    next[match.id] = {
+      teamA: match.teamA.score === null ? "" : String(match.teamA.score),
+      teamB: match.teamB.score === null ? "" : String(match.teamB.score),
+    };
+  }
+  return next;
+}
+
+function parseDraftScores(
+  round: TournamentDTO["rounds"][number] | undefined,
+  drafts: ScoreDraft,
+  pointsTo: number,
+): MatchScoreInput[] | null {
+  if (!round) return null;
+
+  const scores: MatchScoreInput[] = [];
+  for (const match of round.matches) {
+    const draft = drafts[match.id];
+    if (!draft || draft.teamA === "" || draft.teamB === "") return null;
+
+    const teamAScore = Number(draft.teamA);
+    const teamBScore = Number(draft.teamB);
+    if (
+      !Number.isInteger(teamAScore) ||
+      !Number.isInteger(teamBScore) ||
+      teamAScore < 0 ||
+      teamBScore < 0 ||
+      teamAScore + teamBScore !== pointsTo
+    ) {
+      return null;
+    }
+
+    scores.push({ matchId: match.id, teamAScore, teamBScore });
+  }
+
+  return scores;
+}
 
 export default function RoundView({
   tournament,
   busy,
   error,
-  onSaveScore,
   onNextRound,
   onFinalRound,
   onStandings,
@@ -19,15 +64,9 @@ export default function RoundView({
   tournament: TournamentDTO;
   busy: boolean;
   error: string | null;
-  onSaveScore: (input: {
-    roundIndex: number;
-    matchId: string;
-    teamAScore: number;
-    teamBScore: number;
-  }) => Promise<void>;
-  onNextRound: () => void;
-  onFinalRound: () => void;
-  onStandings: () => void;
+  onNextRound: (scores: MatchScoreInput[]) => void;
+  onFinalRound: (scores: MatchScoreInput[]) => void;
+  onStandings: (scores: MatchScoreInput[] | null) => void;
   onSelectRound: (roundIndex: number) => void;
 }) {
   const round = tournament.rounds[tournament.currentRoundIndex];
@@ -40,27 +79,25 @@ export default function RoundView({
     [tournament.players],
   );
 
-  const [drafts, setDrafts] = useState<ScoreDraft>({});
+  const [drafts, setDrafts] = useState<ScoreDraft>(() =>
+    draftsFromRound(round),
+  );
 
   useEffect(() => {
-    if (!round) return;
-    const next: ScoreDraft = {};
-    for (const match of round.matches) {
-      next[match.id] = {
-        teamA: match.teamA.score === null ? "" : String(match.teamA.score),
-        teamB: match.teamB.score === null ? "" : String(match.teamB.score),
-      };
-    }
-    setDrafts(next);
+    setDrafts(draftsFromRound(round));
   }, [round]);
+
+  const parsedScores = useMemo(
+    () => parseDraftScores(round, drafts, tournament.pointsTo),
+    [round, drafts, tournament.pointsTo],
+  );
+  const allScoresProvided = parsedScores !== null;
 
   if (!round) {
     return <p className="tournament-empty">No rounds yet.</p>;
   }
 
-  const complete = isRoundComplete(round);
-  const canFinal =
-    complete &&
+  const canOfferFinal =
     !round.isFinal &&
     tournament.rounds.length >= 1 &&
     !tournament.rounds.some((item) => item.isFinal);
@@ -101,27 +138,6 @@ export default function RoundView({
     });
   };
 
-  const saveMatch = async (matchId: string) => {
-    const draft = drafts[matchId];
-    if (!draft) return;
-    const teamAScore = Number(draft.teamA);
-    const teamBScore = Number(draft.teamB);
-    if (
-      !Number.isInteger(teamAScore) ||
-      !Number.isInteger(teamBScore) ||
-      teamAScore < 0 ||
-      teamBScore < 0
-    ) {
-      return;
-    }
-    await onSaveScore({
-      roundIndex: tournament.currentRoundIndex,
-      matchId,
-      teamAScore,
-      teamBScore,
-    });
-  };
-
   return (
     <section className="tournament-round">
       <div className="tournament-round__toolbar">
@@ -147,24 +163,24 @@ export default function RoundView({
             <button
               type="button"
               className="tournament-button"
-              onClick={onNextRound}
-              disabled={!complete || busy}>
+              onClick={() => parsedScores && onNextRound(parsedScores)}
+              disabled={!allScoresProvided || busy}>
               New round
             </button>
           )}
-          {canFinal && (
+          {canOfferFinal && (
             <button
               type="button"
               className="tournament-button"
-              onClick={onFinalRound}
-              disabled={busy}>
+              onClick={() => parsedScores && onFinalRound(parsedScores)}
+              disabled={!allScoresProvided || busy}>
               Final
             </button>
           )}
           <button
             type="button"
             className="tournament-button tournament-button--primary"
-            onClick={onStandings}
+            onClick={() => onStandings(parsedScores)}
             disabled={busy}>
             Standings
           </button>
@@ -179,16 +195,13 @@ export default function RoundView({
           const a = Number(draft.teamA);
           const b = Number(draft.teamB);
           const sumOk =
+            draft.teamA !== "" &&
+            draft.teamB !== "" &&
             Number.isInteger(a) &&
             Number.isInteger(b) &&
             a >= 0 &&
             b >= 0 &&
             a + b === tournament.pointsTo;
-          const saved =
-            match.teamA.score !== null &&
-            match.teamB.score !== null &&
-            String(match.teamA.score) === draft.teamA &&
-            String(match.teamB.score) === draft.teamB;
 
           return (
             <li key={match.id} className="tournament-match">
@@ -228,13 +241,6 @@ export default function RoundView({
                   />
                 </div>
               </div>
-              <button
-                type="button"
-                className="tournament-button"
-                onClick={() => saveMatch(match.id)}
-                disabled={busy || !sumOk || saved}>
-                {saved ? "Saved" : "Save score"}
-              </button>
               {!sumOk && draft.teamA !== "" && draft.teamB !== "" && (
                 <p className="tournament-hint">
                   Scores must add up to {tournament.pointsTo}

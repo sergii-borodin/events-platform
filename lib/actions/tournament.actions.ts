@@ -42,6 +42,12 @@ export type TournamentSettingsInput = {
   courts: Array<{ name: string }>;
 };
 
+export type MatchScoreInput = {
+  matchId: string;
+  teamAScore: number;
+  teamBScore: number;
+};
+
 type ActionResult<T = void> =
   | { success: true; data: T }
   | {
@@ -105,6 +111,39 @@ function normalizeCourts(
   }
 
   return cleaned;
+}
+
+function applyMatchScores(
+  round: ITournament["rounds"][number] | undefined,
+  scores: MatchScoreInput[],
+  pointsTo: number,
+): string | null {
+  if (!round) return "Round not found.";
+
+  for (const score of scores) {
+    if (
+      !Number.isInteger(score.teamAScore) ||
+      !Number.isInteger(score.teamBScore) ||
+      score.teamAScore < 0 ||
+      score.teamBScore < 0
+    ) {
+      return "Scores must be non-negative integers.";
+    }
+
+    if (score.teamAScore + score.teamBScore !== pointsTo) {
+      return `Scores must add up to ${pointsTo}.`;
+    }
+
+    const match = round.matches.find((item) => item.id === score.matchId);
+    if (!match) {
+      return "Match not found.";
+    }
+
+    match.teamA.score = score.teamAScore;
+    match.teamB.score = score.teamBScore;
+  }
+
+  return null;
 }
 
 function validateSettings(
@@ -325,19 +364,22 @@ export async function setMatchScore({
   teamAScore: number;
   teamBScore: number;
 }): Promise<ActionResult<TournamentDTO>> {
-  if (
-    !Number.isInteger(teamAScore) ||
-    !Number.isInteger(teamBScore) ||
-    teamAScore < 0 ||
-    teamBScore < 0
-  ) {
-    return {
-      success: false,
-      reason: "invalid",
-      message: "Scores must be non-negative integers.",
-    };
-  }
+  return setRoundScores({
+    slug,
+    roundIndex,
+    scores: [{ matchId, teamAScore, teamBScore }],
+  });
+}
 
+export async function setRoundScores({
+  slug,
+  roundIndex,
+  scores,
+}: {
+  slug: string;
+  roundIndex: number;
+  scores: MatchScoreInput[];
+}): Promise<ActionResult<TournamentDTO>> {
   try {
     await connectDB();
 
@@ -354,39 +396,29 @@ export async function setMatchScore({
       };
     }
 
-    const round = tournament.rounds[roundIndex];
-    if (!round) {
-      return { success: false, reason: "not-found" };
+    const applied = applyMatchScores(
+      tournament.rounds[roundIndex],
+      scores,
+      tournament.pointsTo,
+    );
+    if (applied) {
+      return { success: false, reason: "invalid", message: applied };
     }
 
-    const match = round.matches.find((item) => item.id === matchId);
-    if (!match) {
-      return { success: false, reason: "not-found" };
-    }
-
-    if (teamAScore + teamBScore !== tournament.pointsTo) {
-      return {
-        success: false,
-        reason: "invalid",
-        message: `Scores must add up to ${tournament.pointsTo}.`,
-      };
-    }
-
-    match.teamA.score = teamAScore;
-    match.teamB.score = teamBScore;
     tournament.markModified("rounds");
     await tournament.save();
 
     revalidateTournamentPaths(slug);
     return { success: true, data: toDTO(tournament.toObject()) };
   } catch (error) {
-    console.error("setMatchScore failed", error);
+    console.error("setRoundScores failed", error);
     return { success: false, reason: "error" };
   }
 }
 
 export async function generateNextRound(
   slug: string,
+  scores?: MatchScoreInput[],
 ): Promise<ActionResult<TournamentDTO>> {
   try {
     await connectDB();
@@ -401,6 +433,14 @@ export async function generateNextRound(
     }
 
     const current = tournament.rounds[tournament.currentRoundIndex];
+    if (scores && scores.length > 0) {
+      const applied = applyMatchScores(current, scores, tournament.pointsTo);
+      if (applied) {
+        return { success: false, reason: "invalid", message: applied };
+      }
+      tournament.markModified("rounds");
+    }
+
     if (!isRoundComplete(current)) {
       return {
         success: false,
@@ -441,6 +481,7 @@ export async function generateNextRound(
 
 export async function generateFinalRound(
   slug: string,
+  scores?: MatchScoreInput[],
 ): Promise<ActionResult<TournamentDTO>> {
   try {
     await connectDB();
@@ -463,6 +504,14 @@ export async function generateFinalRound(
     }
 
     const current = tournament.rounds[tournament.currentRoundIndex];
+    if (scores && scores.length > 0) {
+      const applied = applyMatchScores(current, scores, tournament.pointsTo);
+      if (applied) {
+        return { success: false, reason: "invalid", message: applied };
+      }
+      tournament.markModified("rounds");
+    }
+
     if (!isRoundComplete(current)) {
       return {
         success: false,
