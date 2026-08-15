@@ -5,6 +5,7 @@ import type {
   MatchScoreInput,
   TournamentDTO,
 } from "@/lib/actions/tournament.actions";
+import PadelCourt from "./PadelCourt";
 
 type ScoreDraft = Record<string, { teamA: string; teamB: string }>;
 
@@ -102,8 +103,8 @@ export default function RoundView({
     tournament.rounds.length >= 1 &&
     !tournament.rounds.some((item) => item.isFinal);
 
-  const names = (ids: string[]) =>
-    ids.map((id) => playerNameById.get(id) ?? "Player").join(" & ");
+  const playerNames = (ids: string[]) =>
+    ids.map((id) => playerNameById.get(id) ?? "Player");
 
   const updateDraft = (
     matchId: string,
@@ -205,42 +206,18 @@ export default function RoundView({
 
           return (
             <li key={match.id} className="tournament-match">
-              <div className="tournament-match__court">
-                {courtNameById.get(match.courtId) ?? "Court"}
-              </div>
-              <div className="tournament-match__teams">
-                <div className="tournament-match__team">
-                  <span>{names(match.teamA.playerIds)}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={tournament.pointsTo}
-                    inputMode="numeric"
-                    value={draft.teamA}
-                    onChange={(e) =>
-                      updateDraft(match.id, "teamA", e.target.value)
-                    }
-                    aria-label={`Score for ${names(match.teamA.playerIds)}`}
-                    disabled={busy}
-                  />
-                </div>
-                <span className="tournament-match__vs">vs</span>
-                <div className="tournament-match__team">
-                  <span>{names(match.teamB.playerIds)}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={tournament.pointsTo}
-                    inputMode="numeric"
-                    value={draft.teamB}
-                    onChange={(e) =>
-                      updateDraft(match.id, "teamB", e.target.value)
-                    }
-                    aria-label={`Score for ${names(match.teamB.playerIds)}`}
-                    disabled={busy}
-                  />
-                </div>
-              </div>
+              <PadelCourt
+                courtName={courtNameById.get(match.courtId) ?? "Court"}
+                teamA={playerNames(match.teamA.playerIds)}
+                teamB={playerNames(match.teamB.playerIds)}
+                teamAScore={draft.teamA}
+                teamBScore={draft.teamB}
+                pointsTo={tournament.pointsTo}
+                busy={busy}
+                onScoreChange={(side, value) =>
+                  updateDraft(match.id, side, value)
+                }
+              />
               {!sumOk && draft.teamA !== "" && draft.teamB !== "" && (
                 <p className="tournament-hint">
                   Scores must add up to {tournament.pointsTo}
