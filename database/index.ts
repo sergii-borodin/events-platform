@@ -5,6 +5,8 @@ export { Booking } from "./booking.model";
 
 export { Tournament } from "./tournament.model";
 export type {
+  FeedbackTone,
+  IPlayerRecap,
   ITournament,
   ITournamentCourt,
   ITournamentMatch,

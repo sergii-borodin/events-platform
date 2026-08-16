@@ -41,3 +41,41 @@ export type StandingRow = {
 };
 
 export type PairHistory = Map<string, Map<string, number>>;
+
+export type FeedbackTone =
+  | "formal"
+  | "neutral"
+  | "teambuilding"
+  | "punchy"
+  | "roast";
+
+export type PlayerHighlight =
+  | "champion"
+  | "comeback"
+  | "faded"
+  | "consistent"
+  | "wildcard";
+
+export type PlayerArc = {
+  playerId: string;
+  name: string;
+  finalRank: number;
+  firstRank: number;
+  rankDelta: number;
+  rankHistory: number[];
+  points: number;
+  wins: number;
+  matchesPlayed: number;
+  restRounds: number;
+  biggestWinMargin: number | null;
+  heaviestLossMargin: number | null;
+  lastPlayedWon: boolean | null;
+  restedLastRound: boolean;
+  favoritePartnerName: string | null;
+  highlight: PlayerHighlight;
+};
+
+export type PlayerRecap = {
+  playerId: string;
+  text: string;
+};

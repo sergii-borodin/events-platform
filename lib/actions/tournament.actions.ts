@@ -5,6 +5,8 @@ import { Types } from "mongoose";
 
 import { Event, Tournament } from "@/database";
 import type {
+  FeedbackTone,
+  IPlayerRecap,
   ITournament,
   ITournamentCourt,
   ITournamentPlayer,
@@ -16,10 +18,13 @@ import { getEventParticipants } from "@/lib/actions/booking.actions";
 import connectDB from "@/lib/mongodb";
 import {
   canStart,
+  computePlayerArcs,
   createId,
   generateRound,
+  isFeedbackTone,
   isRoundComplete,
 } from "@/lib/tournament";
+import { generatePlayerRecaps } from "@/lib/tournament/generateRecaps";
 
 export type TournamentDTO = {
   id: string;
@@ -33,6 +38,8 @@ export type TournamentDTO = {
   players: ITournamentPlayer[];
   rounds: ITournament["rounds"];
   currentRoundIndex: number;
+  feedbackTone: FeedbackTone | null;
+  playerRecaps: Array<{ playerId: string; text: string }>;
 };
 
 export type TournamentSettingsInput = {
@@ -75,6 +82,8 @@ function toDTO(doc: {
   players: ITournamentPlayer[];
   rounds: ITournament["rounds"];
   currentRoundIndex: number;
+  feedbackTone?: FeedbackTone | null;
+  playerRecaps?: IPlayerRecap[];
 }): TournamentDTO {
   return {
     id: String(doc._id),
@@ -88,6 +97,11 @@ function toDTO(doc: {
     players: doc.players,
     rounds: doc.rounds,
     currentRoundIndex: doc.currentRoundIndex,
+    feedbackTone: doc.feedbackTone ?? null,
+    playerRecaps: (doc.playerRecaps ?? []).map((recap) => ({
+      playerId: recap.playerId,
+      text: recap.text,
+    })),
   };
 }
 
@@ -551,15 +565,79 @@ export async function generateFinalRound(
   }
 }
 
+function validateRecapInput({
+  tone,
+  confirmRoast,
+}: {
+  tone: unknown;
+  confirmRoast?: boolean;
+}): string | null {
+  if (!isFeedbackTone(tone)) {
+    return "Choose a recap tone.";
+  }
+  if (tone === "roast" && confirmRoast !== true) {
+    return "Roast recaps need a confirmation that everyone is OK with that tone.";
+  }
+  return null;
+}
+
+async function writePlayerRecaps(
+  tournament: {
+    players: ITournamentPlayer[];
+    rounds: ITournament["rounds"];
+    resultSorting: ResultSorting;
+    feedbackTone?: FeedbackTone | null;
+    playerRecaps: IPlayerRecap[];
+    markModified: (path: string) => void;
+  },
+  tone: FeedbackTone,
+) {
+  const arcs = computePlayerArcs(
+    tournament.players,
+    tournament.rounds,
+    tournament.resultSorting,
+  );
+  const recaps = await generatePlayerRecaps(arcs, tone);
+  const generatedAt = new Date();
+
+  tournament.feedbackTone = tone;
+  tournament.playerRecaps = recaps.map((recap) => ({
+    playerId: recap.playerId,
+    text: recap.text,
+    generatedAt,
+  }));
+  tournament.markModified("playerRecaps");
+}
+
 export async function finishTournament(
   slug: string,
+  {
+    tone,
+    confirmRoast,
+  }: {
+    tone: FeedbackTone;
+    confirmRoast?: boolean;
+  },
 ): Promise<ActionResult<TournamentDTO>> {
+  const recapError = validateRecapInput({ tone, confirmRoast });
+  if (recapError) {
+    return { success: false, reason: "invalid", message: recapError };
+  }
+
   try {
     await connectDB();
 
     const tournament = await Tournament.findOne({ slug });
     if (!tournament) {
       return { success: false, reason: "not-found" };
+    }
+
+    if (tournament.status !== "playing") {
+      return {
+        success: false,
+        reason: "invalid",
+        message: "Tournament is not in playing state.",
+      };
     }
 
     const current = tournament.rounds[tournament.currentRoundIndex];
@@ -571,6 +649,7 @@ export async function finishTournament(
       };
     }
 
+    await writePlayerRecaps(tournament, tone);
     tournament.status = "finished";
     await tournament.save();
 
@@ -578,6 +657,48 @@ export async function finishTournament(
     return { success: true, data: toDTO(tournament.toObject()) };
   } catch (error) {
     console.error("finishTournament failed", error);
+    return { success: false, reason: "error" };
+  }
+}
+
+export async function generateTournamentRecaps(
+  slug: string,
+  {
+    tone,
+    confirmRoast,
+  }: {
+    tone: FeedbackTone;
+    confirmRoast?: boolean;
+  },
+): Promise<ActionResult<TournamentDTO>> {
+  const recapError = validateRecapInput({ tone, confirmRoast });
+  if (recapError) {
+    return { success: false, reason: "invalid", message: recapError };
+  }
+
+  try {
+    await connectDB();
+
+    const tournament = await Tournament.findOne({ slug });
+    if (!tournament) {
+      return { success: false, reason: "not-found" };
+    }
+
+    if (tournament.status !== "finished") {
+      return {
+        success: false,
+        reason: "invalid",
+        message: "Finish the tournament before writing recaps.",
+      };
+    }
+
+    await writePlayerRecaps(tournament, tone);
+    await tournament.save();
+
+    revalidateTournamentPaths(slug);
+    return { success: true, data: toDTO(tournament.toObject()) };
+  } catch (error) {
+    console.error("generateTournamentRecaps failed", error);
     return { success: false, reason: "error" };
   }
 }

@@ -15,6 +15,12 @@ export type TournamentStatus = "setup" | "playing" | "finished";
 export type TournamentType = "americano" | "mexicano";
 export type PointsTo = 11 | 16 | 21 | 24 | 32;
 export type ResultSorting = "pointsFirst" | "winsFirst";
+export type FeedbackTone =
+  | "formal"
+  | "neutral"
+  | "teambuilding"
+  | "punchy"
+  | "roast";
 
 export interface ITournamentCourt {
   id: string;
@@ -46,6 +52,12 @@ export interface ITournamentRound {
   restingPlayerIds: string[];
 }
 
+export interface IPlayerRecap {
+  playerId: string;
+  text: string;
+  generatedAt: Date;
+}
+
 export interface ITournament {
   eventId: Types.ObjectId;
   slug: string;
@@ -57,6 +69,8 @@ export interface ITournament {
   players: ITournamentPlayer[];
   rounds: ITournamentRound[];
   currentRoundIndex: number;
+  feedbackTone?: FeedbackTone | null;
+  playerRecaps: IPlayerRecap[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +78,13 @@ export interface ITournament {
 type TournamentModel = Model<ITournament>;
 
 const POINTS_TO_VALUES: PointsTo[] = [11, 16, 21, 24, 32];
+const FEEDBACK_TONE_VALUES: FeedbackTone[] = [
+  "formal",
+  "neutral",
+  "teambuilding",
+  "punchy",
+  "roast",
+];
 
 /* =========================
    Schema
@@ -122,6 +143,15 @@ const roundSchema = new Schema<ITournamentRound>(
     isFinal: { type: Boolean, default: false },
     matches: { type: [matchSchema], default: [] },
     restingPlayerIds: { type: [String], default: [] },
+  },
+  { _id: false },
+);
+
+const playerRecapSchema = new Schema<IPlayerRecap>(
+  {
+    playerId: { type: String, required: true },
+    text: { type: String, required: true, trim: true },
+    generatedAt: { type: Date, default: Date.now },
   },
   { _id: false },
 );
@@ -197,6 +227,17 @@ const tournamentSchema = new Schema<ITournament, TournamentModel>(
       type: Number,
       default: 0,
       min: 0,
+    },
+
+    feedbackTone: {
+      type: String,
+      enum: FEEDBACK_TONE_VALUES,
+      required: false,
+    },
+
+    playerRecaps: {
+      type: [playerRecapSchema],
+      default: [],
     },
   },
   {

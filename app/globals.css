@@ -471,11 +471,15 @@
   }
 
   .tournament-option {
-    @apply bg-dark-200/80 border-dark-200 text-light-100 inline-flex cursor-pointer items-center gap-2 rounded-[8px] border px-3 py-2 text-sm;
+    @apply bg-dark-200/80 border-dark-200 text-light-100 inline-flex cursor-pointer items-start gap-2 rounded-[8px] border px-3 py-2 text-sm;
 
     input {
-      @apply accent-primary;
+      @apply accent-primary mt-1;
     }
+  }
+
+  .tournament-option__hint {
+    @apply text-light-200 mt-0.5 block text-xs font-normal;
   }
 
   .tournament-court-list {
@@ -512,6 +516,10 @@
 
   .tournament-confirm {
     @apply bg-primary/10 border-primary/30 flex flex-col gap-3 rounded-[8px] border px-4 py-3 text-sm;
+  }
+
+  .tournament-confirm--warn {
+    @apply border-red-400/30 bg-red-500/10;
   }
 
   .tournament-actions {
@@ -822,6 +830,10 @@
 
   .tournament-standings {
     @apply flex flex-col gap-4;
+
+    h2 {
+      @apply font-schibsted-grotesk text-xl font-semibold text-light-100;
+    }
   }
 
   .standings-table-wrap {
@@ -846,6 +858,58 @@
 
   .standings-table__name {
     @apply font-medium;
+  }
+
+  .tournament-recaps {
+    @apply flex flex-col gap-4;
+  }
+
+  .tournament-recap-grid {
+    @apply grid grid-cols-1 gap-3 md:grid-cols-2;
+  }
+
+  .tournament-recap-card {
+    @apply bg-dark-100 border-dark-200 flex flex-col gap-2 rounded-[10px] border px-4 py-4;
+  }
+
+  .tournament-recap-card__top {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .tournament-recap-card__name {
+    @apply font-schibsted-grotesk text-base font-semibold text-light-100;
+  }
+
+  .tournament-recap-card__rank {
+    @apply text-light-200 mt-0.5 text-sm;
+  }
+
+  .tournament-recap-card__text {
+    @apply text-light-100 text-sm leading-relaxed;
+  }
+
+  .tournament-recap-badge {
+    @apply shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase;
+  }
+
+  .tournament-recap-badge--champion {
+    @apply bg-primary/20 text-primary;
+  }
+
+  .tournament-recap-badge--comeback {
+    @apply bg-green-500/15 text-green-300;
+  }
+
+  .tournament-recap-badge--faded {
+    @apply bg-orange-500/15 text-orange-300;
+  }
+
+  .tournament-recap-badge--consistent {
+    @apply bg-white/10 text-light-200;
+  }
+
+  .tournament-recap-badge--wildcard {
+    @apply bg-blue/15 text-blue;
   }
 
   .padel-loader-stage {

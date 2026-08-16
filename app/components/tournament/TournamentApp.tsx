@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { EventParticipant } from "@/lib/actions/booking.actions";
 import {
   createOrUpdateTournamentSetup,
   finishTournament,
   generateFinalRound,
   generateNextRound,
+  generateTournamentRecaps,
   goToRound,
   resetTournament,
   setRoundScores,
@@ -16,7 +17,13 @@ import {
   type TournamentDTO,
   type TournamentSettingsInput,
 } from "@/lib/actions/tournament.actions";
-import { computeStandings } from "@/lib/tournament";
+import {
+  computePlayerArcs,
+  computeStandings,
+  type FeedbackTone,
+} from "@/lib/tournament";
+import FeedbackTonePicker from "./FeedbackTonePicker";
+import PlayerRecaps from "./PlayerRecaps";
 import RoundView from "./RoundView";
 import StandingsTable from "./StandingsTable";
 import TournamentHeader from "./TournamentHeader";
@@ -46,6 +53,10 @@ export default function TournamentApp({
   const [view, setView] = useState<View>(() => initialView(initialTournament));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [tone, setTone] = useState<FeedbackTone>(
+    initialTournament?.feedbackTone ?? "neutral",
+  );
+  const [confirmRoast, setConfirmRoast] = useState(false);
 
   const run = (action: () => Promise<void>) => {
     setError(null);
@@ -100,6 +111,8 @@ export default function TournamentApp({
       }
       setTournament(null);
       setView("setup");
+      setTone("neutral");
+      setConfirmRoast(false);
     });
   };
 
@@ -147,14 +160,38 @@ export default function TournamentApp({
   };
 
   const handleFinish = () => {
+    if (tone === "roast" && !confirmRoast) {
+      setError("Confirm that everyone is OK with roast recaps.");
+      return;
+    }
+
     run(async () => {
-      const result = await finishTournament(slug);
+      const result = await finishTournament(slug, { tone, confirmRoast });
       if (!result.success) {
         setError(result.message ?? "Could not finish tournament.");
         return;
       }
       setTournament(result.data);
       setView("standings");
+    });
+  };
+
+  const handleRewriteRecaps = () => {
+    if (tone === "roast" && !confirmRoast) {
+      setError("Confirm that everyone is OK with roast recaps.");
+      return;
+    }
+
+    run(async () => {
+      const result = await generateTournamentRecaps(slug, {
+        tone,
+        confirmRoast,
+      });
+      if (!result.success) {
+        setError(result.message ?? "Could not write recaps.");
+        return;
+      }
+      setTournament(result.data);
     });
   };
 
@@ -170,14 +207,32 @@ export default function TournamentApp({
     });
   };
 
-  const standings =
-    tournament && tournament.rounds.length > 0
-      ? computeStandings(
-          tournament.players,
-          tournament.rounds,
-          tournament.resultSorting,
-        )
-      : [];
+  const standings = useMemo(
+    () =>
+      tournament && tournament.rounds.length > 0
+        ? computeStandings(
+            tournament.players,
+            tournament.rounds,
+            tournament.resultSorting,
+          )
+        : [],
+    [tournament],
+  );
+
+  const arcs = useMemo(
+    () =>
+      tournament && tournament.rounds.length > 0
+        ? computePlayerArcs(
+            tournament.players,
+            tournament.rounds,
+            tournament.resultSorting,
+          )
+        : [],
+    [tournament],
+  );
+
+  const roastBlocked = tone === "roast" && !confirmRoast;
+  const finished = tournament?.status === "finished";
 
   return (
     <div className="tournament-app">
@@ -223,28 +278,58 @@ export default function TournamentApp({
 
       {view === "standings" && tournament && (
         <section className="tournament-standings">
-          <div className="tournament-actions">
-            {tournament.status !== "finished" && (
-              <>
+          {!finished && (
+            <div className="tournament-actions">
+              <button
+                type="button"
+                className="tournament-button tournament-button--ghost"
+                onClick={() => setView("round")}
+                disabled={pending}>
+                Back to rounds
+              </button>
+            </div>
+          )}
+
+          <h2>Standings</h2>
+          <StandingsTable standings={standings} />
+
+          <div className="tournament-recaps">
+            <h2>{finished ? "Player recaps" : "End of tournament recaps"}</h2>
+            <FeedbackTonePicker
+              tone={tone}
+              onToneChange={setTone}
+              confirmRoast={confirmRoast}
+              onConfirmRoastChange={setConfirmRoast}
+              disabled={pending}
+            />
+            <div className="tournament-actions">
+              {finished ? (
                 <button
                   type="button"
-                  className="tournament-button tournament-button--ghost"
-                  onClick={() => setView("round")}
-                  disabled={pending}>
-                  Back to rounds
+                  className="tournament-button tournament-button--primary"
+                  onClick={handleRewriteRecaps}
+                  disabled={pending || roastBlocked}>
+                  {pending
+                    ? "Writing recaps…"
+                    : tournament.playerRecaps.length > 0
+                      ? "Rewrite recaps"
+                      : "Write recaps"}
                 </button>
+              ) : (
                 <button
                   type="button"
                   className="tournament-button tournament-button--primary"
                   onClick={handleFinish}
-                  disabled={pending}>
-                  {pending ? "Finishing…" : "End tournament"}
+                  disabled={pending || roastBlocked}>
+                  {pending ? "Writing recaps…" : "End tournament"}
                 </button>
-              </>
+              )}
+            </div>
+            {finished && (
+              <PlayerRecaps arcs={arcs} recaps={tournament.playerRecaps} />
             )}
           </div>
-          <h2>Standings</h2>
-          <StandingsTable standings={standings} />
+
           {error && <p className="tournament-error">{error}</p>}
         </section>
       )}
