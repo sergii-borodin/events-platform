@@ -137,9 +137,11 @@ function generateFinalRound(
   roundIndex: number,
 ): EngineRound {
   const standings = computeStandings(players, previousRounds, resultSorting);
-  const top = standings.slice(0, 4).map((row) => row.playerId);
+  const orderedIds = standings.map((row) => row.playerId);
+  const playableSlots =
+    Math.floor(orderedIds.length / PLAYERS_PER_COURT) * PLAYERS_PER_COURT;
 
-  if (top.length < 4) {
+  if (playableSlots < PLAYERS_PER_COURT) {
     const fallback = generateRound({
       players,
       courts,
@@ -152,24 +154,27 @@ function generateFinalRound(
     return { ...fallback, isFinal: true };
   }
 
-  const court = courts[0];
-  const restingPlayerIds = players
-    .map((player) => player.id)
-    .filter((id) => !top.includes(id));
+  const playing = orderedIds.slice(0, playableSlots);
+  const restingPlayerIds = orderedIds.slice(playableSlots);
+  const matches: EngineMatch[] = [];
+
+  for (let i = 0; i < playing.length; i += PLAYERS_PER_COURT) {
+    const group = playing.slice(i, i + PLAYERS_PER_COURT);
+    const court = courts[Math.floor(i / PLAYERS_PER_COURT) % courts.length];
+    matches.push({
+      id: createId("match"),
+      courtId: court.id,
+      // 1 & 2 vs 3 & 4, then 5 & 6 vs 7 & 8, …
+      teamA: { playerIds: [group[0], group[1]], score: null },
+      teamB: { playerIds: [group[2], group[3]], score: null },
+    });
+  }
 
   return {
     index: roundIndex,
     isFinal: true,
     restingPlayerIds,
-    matches: [
-      {
-        id: createId("match"),
-        courtId: court.id,
-        // 1 & 2 vs 3 & 4 (americano.ninja default)
-        teamA: { playerIds: [top[0], top[1]], score: null },
-        teamB: { playerIds: [top[2], top[3]], score: null },
-      },
-    ],
+    matches,
   };
 }
 
