@@ -230,8 +230,96 @@
     }
   }
 
+  .events-toolbar {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .event-filter {
+    @apply flex flex-col gap-2 sm:items-end;
+  }
+
+  .event-filter__label {
+    @apply text-light-200 text-xs font-medium tracking-[0.08em] uppercase;
+  }
+
+  .event-filter__options {
+    @apply border-dark-200 bg-dark-100 flex max-w-full rounded-full border p-1 overflow-x-auto;
+  }
+
+  .event-filter__options--skeleton {
+    @apply h-10 w-80 animate-pulse;
+  }
+
+  .event-filter__options a {
+    @apply shrink-0 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap text-light-200 transition-colors;
+  }
+
+  .event-filter__options a.is-active {
+    @apply bg-primary text-dark-100;
+  }
+
+  .event-filter__options a:hover:not(.is-active) {
+    @apply text-white;
+  }
+
+  .event-filter-local {
+    @apply relative mt-1 flex w-full max-w-md flex-col gap-2 sm:items-end;
+  }
+
+  .event-filter-local label {
+    @apply sr-only;
+  }
+
+  .event-filter-local__row {
+    @apply flex w-full flex-wrap items-center justify-end gap-2;
+  }
+
+  .event-filter-local input {
+    @apply border-dark-200 bg-dark-100 min-w-0 rounded-full border px-4 py-1.5 text-sm text-white placeholder:text-light-200;
+  }
+
+  .event-filter-local input[type="text"] {
+    @apply flex-1;
+  }
+
+  .event-filter-local input[type="number"] {
+    @apply w-28;
+  }
+
+  .event-filter-local button {
+    @apply border-dark-200 bg-dark-100 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap text-light-200 transition-colors;
+  }
+
+  .event-filter-local button:hover:not(:disabled) {
+    @apply text-white;
+  }
+
+  .event-filter-local button:disabled {
+    @apply cursor-wait opacity-70;
+  }
+
+  .event-filter-local__apply {
+    @apply bg-primary border-primary text-dark-100;
+  }
+
+  .event-filter-local__apply:hover:not(:disabled) {
+    @apply text-dark-100 brightness-95;
+  }
+
+  .event-filter-local__unit {
+    @apply text-light-200 text-sm;
+  }
+
+  .event-filter-local__error {
+    @apply text-sm text-red-400 sm:text-right;
+  }
+
   .events {
     @apply grid md:grid-cols-3 gap-10 sm:grid-cols-2 grid-cols-1;
+  }
+
+  .events-skeleton-card {
+    @apply h-[420px] animate-pulse rounded-lg bg-white/10;
   }
 
   #event-card {

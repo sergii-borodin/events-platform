@@ -1,6 +1,8 @@
 import connectDB from "@/lib/mongodb";
 import { Event, type IEvent } from "@/database/event.model";
 import { Booking } from "@/database/booking.model";
+import { DEFAULT_RADIUS_KM, type EventQuery } from "@/lib/utils/eventFilter";
+import { distanceKm, geocodeLocation, type Coordinates } from "@/lib/utils/geo";
 
 type EventWithBookings = IEvent & { _id: string };
 
@@ -34,16 +36,71 @@ function serializeEvent<T extends { _id: unknown }>(
   };
 }
 
-export const getEvents = async (): Promise<EventWithBookings[]> => {
+async function filterEventsByRadius(
+  events: (IEvent & { _id: unknown })[],
+  origin: Coordinates,
+  radiusKm: number,
+): Promise<(IEvent & { _id: unknown })[]> {
+  const uniqueLocations = [...new Set(events.map((event) => event.location))];
+  const coordinatesByLocation = new Map<string, Coordinates | null>(
+    await Promise.all(
+      uniqueLocations.map(
+        async (location) =>
+          [location, await geocodeLocation(location)] as const,
+      ),
+    ),
+  );
+
+  return events.filter((event) => {
+    const coordinates = coordinatesByLocation.get(event.location);
+    if (!coordinates) return false;
+    return distanceKm(origin, coordinates) <= radiusKm;
+  });
+}
+
+export const getEvents = async (
+  query: EventQuery = {
+    category: "all",
+    zip: "",
+    radiusKm: DEFAULT_RADIUS_KM,
+    lat: null,
+    lng: null,
+  },
+): Promise<EventWithBookings[]> => {
   try {
     await connectDB();
 
+    const match =
+      query.rangeStart && query.rangeEnd
+        ? {
+            date: {
+              $gte: new Date(query.rangeStart),
+              $lt: new Date(query.rangeEnd),
+            },
+          }
+        : null;
+
     const events = await Event.aggregate<IEvent & { _id: unknown }>([
+      ...(match ? [{ $match: match }] : []),
       ...bookingsLookupStages,
-      { $sort: { createdAt: -1 } },
+      { $sort: { date: 1, time: 1 } },
     ]);
 
-    return events.map(serializeEvent);
+    if (query.category !== "local") {
+      return events.map(serializeEvent);
+    }
+
+    if (query.lat == null || query.lng == null) {
+      return [];
+    }
+
+    const nearby = await filterEventsByRadius(
+      events,
+      { lat: query.lat, lng: query.lng },
+      query.radiusKm,
+    );
+
+    return nearby.map(serializeEvent);
   } catch {
     return [];
   }

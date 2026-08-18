@@ -4,6 +4,8 @@ import { v2 as cloudinary } from "cloudinary";
 import connectDB from "@/lib/mongodb";
 import { Event } from "@/database/event.model";
 import { getEvents } from "@/lib/actions/event.actions";
+import { parseEventFilter, toEventQuery, isCompletePostcode } from "@/lib/utils/eventFilter";
+import { geocodePostcode } from "@/lib/utils/geo";
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,9 +78,32 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const events = await getEvents();
+    const { searchParams } = req.nextUrl;
+    const query = toEventQuery(
+      parseEventFilter({
+        filter: searchParams.get("filter"),
+        zip: searchParams.get("zip"),
+        radius: searchParams.get("radius"),
+        lat: searchParams.get("lat"),
+        lng: searchParams.get("lng"),
+      }),
+    );
+
+    if (
+      query.category === "local" &&
+      (query.lat == null || query.lng == null) &&
+      isCompletePostcode(query.zip)
+    ) {
+      const origin = await geocodePostcode(query.zip);
+      if (origin) {
+        query.lat = origin.lat;
+        query.lng = origin.lng;
+      }
+    }
+
+    const events = await getEvents(query);
 
     return NextResponse.json(
       { message: "Events fetched successfully", events },
