@@ -266,12 +266,12 @@
     @apply relative mt-1 flex w-full max-w-md flex-col gap-2 sm:items-end;
   }
 
-  .event-filter-local label {
-    @apply sr-only;
+  .event-filter-local__row {
+    @apply flex flex-row gap-2 w-full items-center;
   }
 
-  .event-filter-local__row {
-    @apply flex w-full flex-wrap items-center justify-end gap-2;
+  .event-filter-local__column {
+    @apply flex-1 flex flex-col gap-2 max-w-1/2;
   }
 
   .event-filter-local input {

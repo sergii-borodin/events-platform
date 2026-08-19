@@ -119,6 +119,7 @@ function EventFilter() {
   };
 
   const detectLocation = async () => {
+    console.log("detectLocation");
     setDetectError("");
 
     if (!navigator.geolocation) {
@@ -129,6 +130,7 @@ function EventFilter() {
     setDetecting(true);
 
     try {
+      console.log("navigator.geolocation", navigator.geolocation);
       const position = await new Promise<GeolocationPosition>(
         (resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -138,6 +140,7 @@ function EventFilter() {
         },
       );
 
+      console.log("position.coords", position.coords);
       const { latitude, longitude } = position.coords;
       const response = await fetch(
         `/api/geo/reverse?lat=${latitude}&lng=${longitude}`,
@@ -149,6 +152,7 @@ function EventFilter() {
         throw new Error(data.message || "Could not determine your postcode.");
       }
 
+      console.log("data.postcode", data.postcode);
       setZip(data.postcode);
       applyLocal({
         nextZip: data.postcode,
@@ -177,7 +181,10 @@ function EventFilter() {
   return (
     <div className="event-filter">
       <p className="event-filter__label">Filter</p>
-      <div className="event-filter__options" role="group" aria-label="Filter events">
+      <div
+        className="event-filter__options"
+        role="group"
+        aria-label="Filter events">
         {OPTIONS.map((option) => {
           const isActive = filter.category === option.value;
 
@@ -195,7 +202,6 @@ function EventFilter() {
           );
         })}
       </div>
-
       {filter.category === "local" ? (
         <form
           className="event-filter-local"
@@ -205,64 +211,65 @@ function EventFilter() {
             applyCompleteZip(zip, false);
           }}>
           <div className="event-filter-local__row">
-            <label htmlFor="event-filter-zip">Postcode</label>
-            <input
-              id="event-filter-zip"
-              type="text"
-              autoComplete="postal-code"
-              inputMode="numeric"
-              placeholder="Postcode"
-              value={zip}
-              onChange={(event) => {
-                const nextZip = event.target.value;
-                setZip(nextZip);
+            <div className="event-filter-local__column">
+              <label htmlFor="event-filter-radius">Radius (km)</label>
+              <input
+                id="event-filter-radius"
+                type="number"
+                min={1}
+                max={250}
+                step={1}
+                inputMode="numeric"
+                value={radius}
+                onChange={(event) => {
+                  const nextRadius = event.target.value;
+                  setRadius(nextRadius);
 
-                if (zipTimer.current) clearTimeout(zipTimer.current);
-                if (!isAutoApplyPostcode(nextZip)) return;
+                  if (radiusTimer.current) clearTimeout(radiusTimer.current);
+                  if (
+                    !hasLocalOrigin({ zip, lat: filter.lat, lng: filter.lng })
+                  ) {
+                    return;
+                  }
 
-                zipTimer.current = setTimeout(() => {
-                  applyCompleteZip(nextZip, false);
-                }, APPLY_DELAY_MS);
-              }}
-            />
-            <button
-              type="button"
-              onClick={detectLocation}
-              disabled={detecting}>
+                  radiusTimer.current = setTimeout(() => {
+                    applyLocal({ nextRadius });
+                  }, APPLY_DELAY_MS);
+                }}
+              />
+            </div>
+            <div className="event-filter-local__column">
+              <label htmlFor="event-filter-zip">Postcode</label>
+              <input
+                id="event-filter-zip"
+                type="text"
+                autoComplete="postal-code"
+                inputMode="numeric"
+                placeholder="e.g. 6900"
+                value={zip}
+                onChange={(event) => {
+                  const nextZip = event.target.value;
+                  setZip(nextZip);
+
+                  if (zipTimer.current) clearTimeout(zipTimer.current);
+                  if (!isAutoApplyPostcode(nextZip)) return;
+
+                  zipTimer.current = setTimeout(() => {
+                    applyCompleteZip(nextZip, false);
+                  }, APPLY_DELAY_MS);
+                }}
+              />
+            </div>
+            {/* <button type="button" onClick={detectLocation} disabled={detecting}>
               <Image src="/icons/pin.svg" alt="" width={14} height={14} />
               {detecting ? "Detecting…" : "Detect my location"}
-            </button>
+            </button> */}
           </div>
-          <div className="event-filter-local__row">
-            <label htmlFor="event-filter-radius">Radius in kilometres</label>
-            <input
-              id="event-filter-radius"
-              type="number"
-              min={1}
-              max={250}
-              step={1}
-              inputMode="numeric"
-              placeholder="Radius (km)"
-              value={radius}
-              onChange={(event) => {
-                const nextRadius = event.target.value;
-                setRadius(nextRadius);
-
-                if (radiusTimer.current) clearTimeout(radiusTimer.current);
-                if (!hasLocalOrigin({ zip, lat: filter.lat, lng: filter.lng })) {
-                  return;
-                }
-
-                radiusTimer.current = setTimeout(() => {
-                  applyLocal({ nextRadius });
-                }, APPLY_DELAY_MS);
-              }}
-            />
-            <span className="event-filter-local__unit">km</span>
+          {/* <div className="event-filter-local__row">
             <button type="submit" className="event-filter-local__apply">
               Show events
             </button>
-          </div>
+          </div> */}
           {detectError ? (
             <p className="event-filter-local__error">{detectError}</p>
           ) : null}

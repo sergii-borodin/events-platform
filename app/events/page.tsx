@@ -3,9 +3,7 @@ import { cacheLife } from "next/cache";
 
 import EventCard from "../components/EventCard";
 import CreateEventBtn from "../components/CreateEventBtn";
-import EventFilter, {
-  EventFilterFallback,
-} from "../components/EventFilter";
+import EventFilter, { EventFilterFallback } from "../components/EventFilter";
 import type { IEvent } from "@/database/event.model";
 import { getEvents } from "@/lib/actions/event.actions";
 import {

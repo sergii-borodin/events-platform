@@ -59,7 +59,9 @@ function getTimeZoneOffsetMs(date: Date): number {
     hourCycle: "h23",
   }).formatToParts(date);
 
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const value = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
   const asUtc = Date.UTC(
     Number(value.year),
     Number(value.month) - 1,
@@ -80,7 +82,9 @@ function zonedCivilToUtc(
   minute = 0,
   second = 0,
 ): Date {
-  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const utcGuess = new Date(
+    Date.UTC(year, month - 1, day, hour, minute, second),
+  );
   const offset = getTimeZoneOffsetMs(utcGuess);
   const adjusted = new Date(utcGuess.getTime() - offset);
   const offsetAtAdjusted = getTimeZoneOffsetMs(adjusted);
@@ -100,7 +104,9 @@ function getZonedParts(date: Date) {
     day: "2-digit",
     weekday: "short",
   }).formatToParts(date);
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const value = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
 
   return {
     year: Number(value.year),
@@ -134,7 +140,10 @@ export function getThisWeekRange(now = new Date()): { start: Date; end: Date } {
   };
 }
 
-export function getThisMonthRange(now = new Date()): { start: Date; end: Date } {
+export function getThisMonthRange(now = new Date()): {
+  start: Date;
+  end: Date;
+} {
   const parts = getZonedParts(now);
   const endMonth = parts.month === 12 ? 1 : parts.month + 1;
   const endYear = parts.month === 12 ? parts.year + 1 : parts.year;
