@@ -5,6 +5,57 @@ import type {
   StandingRow,
 } from "./types";
 
+export type AppliedMatchScore = {
+  matchId: string;
+  teamAScore: number;
+  teamBScore: number;
+};
+
+export function applyMatchScoresToRound(
+  round: EngineRound,
+  scores: AppliedMatchScore[],
+): EngineRound {
+  const byId = new Map(scores.map((score) => [score.matchId, score]));
+
+  return {
+    ...round,
+    matches: round.matches.map((match) => {
+      const score = byId.get(match.id);
+      if (!score) return match;
+
+      return {
+        ...match,
+        teamA: { ...match.teamA, score: score.teamAScore },
+        teamB: { ...match.teamB, score: score.teamBScore },
+      };
+    }),
+  };
+}
+
+export function computeStandingsBeforeAndAfter(
+  players: EnginePlayer[],
+  rounds: EngineRound[],
+  currentRoundIndex: number,
+  scores: AppliedMatchScore[],
+  resultSorting: ResultSorting = "pointsFirst",
+): { previous: StandingRow[]; next: StandingRow[] } {
+  const previousRounds = rounds.slice(0, currentRoundIndex);
+  const previous = computeStandings(players, previousRounds, resultSorting);
+
+  const current = rounds[currentRoundIndex];
+  if (!current) {
+    return { previous, next: previous };
+  }
+
+  const next = computeStandings(
+    players,
+    [...previousRounds, applyMatchScoresToRound(current, scores)],
+    resultSorting,
+  );
+
+  return { previous, next };
+}
+
 export function isRoundComplete(round: EngineRound | undefined): boolean {
   if (!round) return false;
   return round.matches.every(

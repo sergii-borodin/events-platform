@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   MatchScoreInput,
   TournamentDTO,
 } from "@/lib/actions/tournament.actions";
+import { computeStandingsBeforeAndAfter } from "@/lib/tournament";
 import PadelCourt from "./PadelCourt";
+import RoundStandingsPopup from "./RoundStandingsPopup";
 
 type ScoreDraft = Record<string, { teamA: string; teamB: string }>;
 
@@ -83,16 +85,49 @@ export default function RoundView({
   const [drafts, setDrafts] = useState<ScoreDraft>(() =>
     draftsFromRound(round),
   );
+  const [pendingAdvance, setPendingAdvance] = useState<"next" | "final" | null>(
+    null,
+  );
+  const submittedAdvance = useRef(false);
 
   useEffect(() => {
     setDrafts(draftsFromRound(round));
   }, [round]);
+
+  useEffect(() => {
+    setPendingAdvance(null);
+    submittedAdvance.current = false;
+  }, [tournament.currentRoundIndex]);
+
+  useEffect(() => {
+    if (!busy) submittedAdvance.current = false;
+  }, [busy]);
 
   const parsedScores = useMemo(
     () => parseDraftScores(round, drafts, tournament.pointsTo),
     [round, drafts, tournament.pointsTo],
   );
   const allScoresProvided = parsedScores !== null;
+  const revealStandings = useMemo(
+    () =>
+      pendingAdvance && parsedScores
+        ? computeStandingsBeforeAndAfter(
+            tournament.players,
+            tournament.rounds,
+            tournament.currentRoundIndex,
+            parsedScores,
+            tournament.resultSorting,
+          )
+        : null,
+    [
+      pendingAdvance,
+      parsedScores,
+      tournament.players,
+      tournament.rounds,
+      tournament.currentRoundIndex,
+      tournament.resultSorting,
+    ],
+  );
 
   if (!round) {
     return <p className="tournament-empty">No rounds yet.</p>;
@@ -164,7 +199,7 @@ export default function RoundView({
             <button
               type="button"
               className="tournament-button"
-              onClick={() => parsedScores && onNextRound(parsedScores)}
+              onClick={() => allScoresProvided && setPendingAdvance("next")}
               disabled={!allScoresProvided || busy}>
               New round
             </button>
@@ -173,7 +208,7 @@ export default function RoundView({
             <button
               type="button"
               className="tournament-button"
-              onClick={() => parsedScores && onFinalRound(parsedScores)}
+              onClick={() => allScoresProvided && setPendingAdvance("final")}
               disabled={!allScoresProvided || busy}>
               Final
             </button>
@@ -239,7 +274,38 @@ export default function RoundView({
         </div>
       )}
 
-      {error && <p className="tournament-error">{error}</p>}
+      {error && !revealStandings ? (
+        <p className="tournament-error">{error}</p>
+      ) : null}
+
+      {revealStandings ? (
+        <RoundStandingsPopup
+          previous={revealStandings.previous}
+          next={revealStandings.next}
+          roundLabel={round.isFinal ? "the final" : `round ${round.index + 1}`}
+          continueLabel={
+            pendingAdvance === "final" ? "Go to final" : "Next round"
+          }
+          busy={busy}
+          error={error}
+          onContinue={() => {
+            if (
+              submittedAdvance.current ||
+              busy ||
+              !parsedScores ||
+              !pendingAdvance
+            ) {
+              return;
+            }
+            submittedAdvance.current = true;
+            if (pendingAdvance === "final") {
+              onFinalRound(parsedScores);
+              return;
+            }
+            onNextRound(parsedScores);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

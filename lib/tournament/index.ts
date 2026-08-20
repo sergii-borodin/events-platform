@@ -1,7 +1,13 @@
 export { computePlayerArcs } from "./arcs";
 export { canStart, generateRound, restingCount } from "./generateRound";
 export type { GenerateRoundInput } from "./generateRound";
-export { computeStandings, isRoundComplete } from "./standings";
+export {
+  applyMatchScoresToRound,
+  computeStandings,
+  computeStandingsBeforeAndAfter,
+  isRoundComplete,
+} from "./standings";
+export type { AppliedMatchScore } from "./standings";
 export {
   FEEDBACK_TONE_OPTIONS,
   FEEDBACK_TONES,
