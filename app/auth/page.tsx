@@ -10,7 +10,7 @@ const AuthPage = () => {
   const [mode, setMode] = useState<AuthMode>("login");
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-screen px-4">
+    <section className="flex flex-col items-center justify-center px-0 sm:px-4">
       <div className="w-full max-w-sm">
         {/* Tab toggle */}
         <div className="flex mb-6 border-b border-gray-200">

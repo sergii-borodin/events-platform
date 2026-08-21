@@ -28,7 +28,7 @@ type EventsPageProps = {
 const EventsPage = ({ searchParams }: EventsPageProps) => (
   <section className="relative">
     <CreateEventBtn />
-    <div className="mt-20 space-y-7">
+    <div className="mt-10 space-y-7 sm:mt-20">
       <div className="events-toolbar">
         <h3>Explore and book a game you like</h3>
         <Suspense fallback={<EventFilterFallback />}>

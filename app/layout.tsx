@@ -53,7 +53,14 @@ export default function RootLayout({
             fallback={
               <header>
                 <nav>
-                  <div className="auth-nav auth-nav__skeleton" aria-hidden="true" />
+                  <div className="logo">
+                    <div className="h-10 w-10 rounded-sm bg-white/10 sm:h-12" />
+                    <p>PadelHub</p>
+                  </div>
+                  <div
+                    className="auth-nav auth-nav__skeleton"
+                    aria-hidden="true"
+                  />
                 </nav>
               </header>
             }>

@@ -310,6 +310,14 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
         .btn-primary:hover:not(:disabled) { filter: brightness(0.95); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-add { padding: 0 14px; height: 36px; font-size: 13px; white-space: nowrap; }
+
+        @media (max-width: 639px) {
+          .ef-row-2, .ef-row-3, .rating-grid { grid-template-columns: 1fr; }
+          .form-actions { flex-direction: column-reverse; }
+          .form-actions .btn { width: 100%; }
+          .tag-row { flex-direction: column; }
+          .btn-add { height: 40px; width: 100%; }
+        }
       `}</style>
 
       <div className="ef-root">
