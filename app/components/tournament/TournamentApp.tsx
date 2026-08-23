@@ -10,7 +10,6 @@ import {
   generateNextRound,
   generateTournamentRecaps,
   goToRound,
-  resetTournament,
   setRoundScores,
   startTournament,
   type MatchScoreInput,
@@ -91,28 +90,6 @@ export default function TournamentApp({
 
       setTournament(started.data);
       setView("round");
-    });
-  };
-
-  const handleReset = () => {
-    if (
-      !window.confirm(
-        "Remove the current tournament and start a new one?",
-      )
-    ) {
-      return;
-    }
-
-    run(async () => {
-      const result = await resetTournament(slug);
-      if (!result.success) {
-        setError("Could not reset tournament.");
-        return;
-      }
-      setTournament(null);
-      setView("setup");
-      setTone("neutral");
-      setConfirmRoast(false);
     });
   };
 
@@ -241,8 +218,6 @@ export default function TournamentApp({
         slug={slug}
         tournamentType={tournament?.tournamentType}
         pointsTo={tournament?.pointsTo}
-        onReset={tournament ? handleReset : undefined}
-        resetting={pending}
       />
 
       {view === "setup" && (

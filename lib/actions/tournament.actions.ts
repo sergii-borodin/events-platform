@@ -737,21 +737,3 @@ export async function goToRound({
   }
 }
 
-export async function resetTournament(
-  slug: string,
-): Promise<ActionResult<null>> {
-  try {
-    await connectDB();
-
-    const deleted = await Tournament.findOneAndDelete({ slug });
-    if (!deleted) {
-      return { success: false, reason: "not-found" };
-    }
-
-    revalidateTournamentPaths(slug);
-    return { success: true, data: null };
-  } catch (error) {
-    console.error("resetTournament failed", error);
-    return { success: false, reason: "error" };
-  }
-}

@@ -608,10 +608,6 @@
     }
   }
 
-  .tournament-header__top {
-    @apply flex flex-wrap items-center justify-between gap-3;
-  }
-
   .tournament-header__meta {
     @apply text-light-200 text-sm;
   }
