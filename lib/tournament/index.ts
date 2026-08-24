@@ -1,4 +1,6 @@
 export { computePlayerArcs } from "./arcs";
+export { generateOpeningRound } from "./firstRound";
+export type { OpeningRoundInput, OpeningRoundPlayer } from "./firstRound";
 export { canStart, generateRound, restingCount } from "./generateRound";
 export type { GenerateRoundInput } from "./generateRound";
 export {
@@ -29,5 +31,6 @@ export type {
   PointsTo,
   ResultSorting,
   StandingRow,
+  StartMode,
   TournamentType,
 } from "./types";

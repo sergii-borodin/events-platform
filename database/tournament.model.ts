@@ -13,6 +13,7 @@ import {
 
 export type TournamentStatus = "setup" | "playing" | "finished";
 export type TournamentType = "americano" | "mexicano";
+export type StartMode = "custom" | "random";
 export type PointsTo = 11 | 16 | 21 | 24 | 32;
 export type ResultSorting = "pointsFirst" | "winsFirst";
 export type FeedbackTone =
@@ -31,6 +32,20 @@ export interface ITournamentPlayer {
   id: string;
   name: string;
   bookingId?: string;
+  firstName?: string;
+  lastName?: string;
+  fieldName?: string;
+}
+
+export interface ILineupFieldSlot {
+  firstName: string;
+  lastName: string;
+  bookingId?: string;
+}
+
+export interface ILineupFieldSnapshot {
+  name: string;
+  slots: ILineupFieldSlot[];
 }
 
 export interface ITournamentTeam {
@@ -63,10 +78,12 @@ export interface ITournament {
   slug: string;
   status: TournamentStatus;
   tournamentType: TournamentType;
+  startMode: StartMode;
   pointsTo: PointsTo;
   resultSorting: ResultSorting;
   courts: ITournamentCourt[];
   players: ITournamentPlayer[];
+  lineupFields: ILineupFieldSnapshot[];
   rounds: ITournamentRound[];
   currentRoundIndex: number;
   feedbackTone?: FeedbackTone | null;
@@ -103,6 +120,26 @@ const playerSchema = new Schema<ITournamentPlayer>(
     id: { type: String, required: true },
     name: { type: String, required: true, trim: true },
     bookingId: { type: String, required: false },
+    firstName: { type: String, required: false, trim: true },
+    lastName: { type: String, required: false, trim: true },
+    fieldName: { type: String, required: false, trim: true },
+  },
+  { _id: false },
+);
+
+const lineupFieldSlotSchema = new Schema<ILineupFieldSlot>(
+  {
+    firstName: { type: String, required: false, trim: true, default: "" },
+    lastName: { type: String, required: false, trim: true, default: "" },
+    bookingId: { type: String, required: false },
+  },
+  { _id: false },
+);
+
+const lineupFieldSnapshotSchema = new Schema<ILineupFieldSnapshot>(
+  {
+    name: { type: String, required: false, trim: true, default: "" },
+    slots: { type: [lineupFieldSlotSchema], default: [] },
   },
   { _id: false },
 );
@@ -186,6 +223,13 @@ const tournamentSchema = new Schema<ITournament, TournamentModel>(
       required: true,
     },
 
+    startMode: {
+      type: String,
+      enum: ["custom", "random"],
+      default: "custom",
+      required: false,
+    },
+
     pointsTo: {
       type: Number,
       enum: {
@@ -215,6 +259,11 @@ const tournamentSchema = new Schema<ITournament, TournamentModel>(
 
     players: {
       type: [playerSchema],
+      default: [],
+    },
+
+    lineupFields: {
+      type: [lineupFieldSnapshotSchema],
       default: [],
     },
 

@@ -6,6 +6,7 @@ export { Booking } from "./booking.model";
 export { Tournament } from "./tournament.model";
 export type {
   FeedbackTone,
+  ILineupFieldSnapshot,
   IPlayerRecap,
   ITournament,
   ITournamentCourt,
@@ -15,6 +16,7 @@ export type {
   ITournamentTeam,
   PointsTo,
   ResultSorting,
+  StartMode,
   TournamentDocument,
   TournamentStatus,
   TournamentType,

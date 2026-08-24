@@ -21,6 +21,7 @@ import {
   computeStandings,
   type FeedbackTone,
 } from "@/lib/tournament";
+import { courtsFromLineupFields } from "@/lib/tournament/lineup";
 import FeedbackTonePicker from "./FeedbackTonePicker";
 import PlayerRecaps from "./PlayerRecaps";
 import RoundView from "./RoundView";
@@ -40,11 +41,13 @@ export default function TournamentApp({
   slug,
   eventTitle,
   participants,
+  maxParticipants,
   initialTournament,
 }: {
   slug: string;
   eventTitle: string;
   participants: EventParticipant[];
+  maxParticipants: number;
   initialTournament: TournamentDTO | null;
 }) {
   const router = useRouter();
@@ -76,7 +79,7 @@ export default function TournamentApp({
         setError(
           setup.message ??
             (setup.reason === "not-enough-players"
-              ? "Need at least 4 signed-up players."
+              ? "Need at least 4 players."
               : "Could not save tournament setup."),
         );
         return;
@@ -210,6 +213,11 @@ export default function TournamentApp({
 
   const roastBlocked = tone === "roast" && !confirmRoast;
   const finished = tournament?.status === "finished";
+  const setupCourts = (() => {
+    if (!tournament) return undefined;
+    const fromLineup = courtsFromLineupFields(tournament.lineupFields);
+    return fromLineup.length > 0 ? fromLineup : tournament.courts;
+  })();
 
   return (
     <div className="tournament-app">
@@ -222,14 +230,18 @@ export default function TournamentApp({
 
       {view === "setup" && (
         <TournamentSetup
+          slug={slug}
           participants={participants}
+          lineupPlayers={tournament?.players}
+          maxParticipants={maxParticipants}
           initialSettings={
             tournament
               ? {
                   tournamentType: tournament.tournamentType,
+                  startMode: tournament.startMode,
                   pointsTo: tournament.pointsTo,
                   resultSorting: tournament.resultSorting,
-                  courts: tournament.courts,
+                  courts: setupCourts,
                 }
               : undefined
           }

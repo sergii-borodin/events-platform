@@ -1,4 +1,5 @@
 export type TournamentType = "americano" | "mexicano";
+export type StartMode = "custom" | "random";
 export type PointsTo = 11 | 16 | 21 | 24 | 32;
 export type ResultSorting = "pointsFirst" | "winsFirst";
 

@@ -37,9 +37,11 @@ async function TournamentPageContent({
   return (
     <section id="tournament">
       <TournamentApp
+        key={`${tournament?.id ?? "setup"}-${participants.length}-${tournament?.players.length ?? 0}`}
         slug={slug}
         eventTitle={event.title}
         participants={participants}
+        maxParticipants={event.maxParticipants}
         initialTournament={tournament}
       />
     </section>

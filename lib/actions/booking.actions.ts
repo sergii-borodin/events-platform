@@ -158,3 +158,116 @@ export const createBooking = async ({
     return { success: false, reason: "error" };
   }
 };
+
+export type LineupBookingInput = {
+  firstName: string;
+  lastName: string;
+};
+
+type CreateLineupBookingsResult =
+  | {
+      success: true;
+      data: Array<{ id: string; firstName: string; lastName: string }>;
+    }
+  | {
+      success: false;
+      reason: "event-not-found" | "full" | "invalid-event" | "error";
+    };
+
+function lineupBookingEmail(): string {
+  return `lineup-${new Types.ObjectId().toHexString()}@lineup.local`;
+}
+
+export const createLineupBookings = async ({
+  eventId,
+  slug,
+  players,
+}: {
+  eventId: string;
+  slug: string;
+  players: LineupBookingInput[];
+}): Promise<CreateLineupBookingsResult> => {
+  if (players.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  if (!Types.ObjectId.isValid(eventId)) {
+    return { success: false, reason: "invalid-event" };
+  }
+
+  const eventObjectId = new Types.ObjectId(eventId);
+  const docs = players.map((player) => {
+    const firstName = player.firstName.trim();
+    const lastName = player.lastName.trim();
+
+    return {
+      eventId: eventObjectId,
+      firstName: firstName || lastName,
+      lastName,
+      email: lineupBookingEmail(),
+    };
+  });
+
+  if (docs.some((doc) => !doc.firstName)) {
+    return { success: false, reason: "error" };
+  }
+
+  try {
+    const db = await connectDB();
+    const session = await db.startSession();
+
+    let result: CreateLineupBookingsResult = {
+      success: false,
+      reason: "error",
+    };
+
+    try {
+      await session.withTransaction(async () => {
+        const event = await Event.findById(eventObjectId)
+          .select("maxParticipants")
+          .session(session);
+
+        if (!event) {
+          result = { success: false, reason: "event-not-found" };
+          return;
+        }
+
+        const bookingsCount = await Booking.countDocuments({
+          eventId: eventObjectId,
+        }).session(session);
+
+        if (bookingsCount + docs.length > event.maxParticipants) {
+          result = { success: false, reason: "full" };
+          return;
+        }
+
+        const created = await Booking.create(docs, { session, ordered: true });
+
+        await Event.updateOne(
+          { _id: eventObjectId },
+          { $set: { bookingsCount: bookingsCount + created.length } },
+          { session },
+        );
+
+        result = {
+          success: true,
+          data: created.map((booking) => ({
+            id: String(booking._id),
+            firstName: booking.firstName,
+            lastName: booking.lastName ?? "",
+          })),
+        };
+
+        revalidatePath(`/events/${slug}`);
+        revalidatePath("/events");
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return result;
+  } catch (e) {
+    console.error("create lineup bookings failed", e);
+    return { success: false, reason: "error" };
+  }
+};

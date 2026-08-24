@@ -6,25 +6,39 @@ import { Types } from "mongoose";
 import { Event, Tournament } from "@/database";
 import type {
   FeedbackTone,
+  ILineupFieldSnapshot,
   IPlayerRecap,
   ITournament,
   ITournamentCourt,
   ITournamentPlayer,
   PointsTo,
   ResultSorting,
+  StartMode,
   TournamentType,
 } from "@/database/tournament.model";
-import { getEventParticipants } from "@/lib/actions/booking.actions";
+import {
+  createLineupBookings,
+  getEventParticipants,
+} from "@/lib/actions/booking.actions";
 import connectDB from "@/lib/mongodb";
 import {
   canStart,
   computePlayerArcs,
   createId,
+  generateOpeningRound,
   generateRound,
   isFeedbackTone,
   isRoundComplete,
 } from "@/lib/tournament";
 import { generatePlayerRecaps } from "@/lib/tournament/generateRecaps";
+import {
+  courtsFromLineupFields,
+  isRealLineupPlayer,
+  lineupSnapshotsToPlayers,
+  mergeLineupWithBookings,
+  type LineupFieldSnapshotInput,
+  type LineupStoredPlayer,
+} from "@/lib/tournament/lineup";
 
 export type TournamentDTO = {
   id: string;
@@ -32,10 +46,12 @@ export type TournamentDTO = {
   slug: string;
   status: ITournament["status"];
   tournamentType: TournamentType;
+  startMode: StartMode;
   pointsTo: PointsTo;
   resultSorting: ResultSorting;
   courts: ITournamentCourt[];
   players: ITournamentPlayer[];
+  lineupFields: ILineupFieldSnapshot[];
   rounds: ITournament["rounds"];
   currentRoundIndex: number;
   feedbackTone: FeedbackTone | null;
@@ -44,6 +60,7 @@ export type TournamentDTO = {
 
 export type TournamentSettingsInput = {
   tournamentType: TournamentType;
+  startMode: StartMode;
   pointsTo: PointsTo;
   resultSorting: ResultSorting;
   courts: Array<{ name: string }>;
@@ -76,10 +93,12 @@ function toDTO(doc: {
   slug: string;
   status: ITournament["status"];
   tournamentType: TournamentType;
+  startMode?: StartMode;
   pointsTo: PointsTo;
   resultSorting: ResultSorting;
   courts: ITournamentCourt[];
   players: ITournamentPlayer[];
+  lineupFields?: ILineupFieldSnapshot[];
   rounds: ITournament["rounds"];
   currentRoundIndex: number;
   feedbackTone?: FeedbackTone | null;
@@ -91,10 +110,12 @@ function toDTO(doc: {
     slug: doc.slug,
     status: doc.status,
     tournamentType: doc.tournamentType,
+    startMode: doc.startMode ?? "custom",
     pointsTo: doc.pointsTo,
     resultSorting: doc.resultSorting,
     courts: doc.courts,
     players: doc.players,
+    lineupFields: doc.lineupFields ?? [],
     rounds: doc.rounds,
     currentRoundIndex: doc.currentRoundIndex,
     feedbackTone: doc.feedbackTone ?? null,
@@ -181,6 +202,10 @@ function validateSettings(
     return "Invalid result sorting";
   }
 
+  if (settings.startMode !== "custom" && settings.startMode !== "random") {
+    return "Invalid start mode";
+  }
+
   if (!Array.isArray(settings.courts) || settings.courts.length < 1) {
     return "At least one court is required";
   }
@@ -188,22 +213,13 @@ function validateSettings(
   return null;
 }
 
-function snapshotPlayers(
+function toTournamentPlayers(
   participants: Array<{ id: string; firstName: string; lastName: string }>,
+  savedPlayers?: LineupStoredPlayer[],
 ): ITournamentPlayer[] {
-  return participants.map((participant) => {
-    const name =
-      [participant.firstName, participant.lastName]
-        .filter(Boolean)
-        .join(" ")
-        .trim() || "Participant";
-
-    return {
-      id: createId("player"),
-      name,
-      bookingId: participant.id,
-    };
-  });
+  return mergeLineupWithBookings(participants, savedPlayers).filter(
+    isRealLineupPlayer,
+  );
 }
 
 export async function getTournamentBySlug(
@@ -234,6 +250,150 @@ export async function getTournamentStatusBySlug(
   }
 }
 
+export async function saveTournamentLineup({
+  slug,
+  fields,
+}: {
+  slug: string;
+  fields: LineupFieldSnapshotInput[];
+}): Promise<ActionResult<TournamentDTO>> {
+  if (!Array.isArray(fields) || fields.length < 1) {
+    return {
+      success: false,
+      reason: "invalid",
+      message: "Lineup is required.",
+    };
+  }
+
+  try {
+    await connectDB();
+
+    const event = await Event.findOne({ slug }).select("_id").lean();
+    if (!event) {
+      return { success: false, reason: "not-found" };
+    }
+
+    const existing = await Tournament.findOne({ slug });
+    if (existing && existing.status !== "setup") {
+      return {
+        success: false,
+        reason: "invalid",
+        message: "Tournament already started. Reset it to change the lineup.",
+      };
+    }
+
+    const lineupFields = fields.map((field) => ({
+      name: (field.name ?? "").trim(),
+      slots: (field.slots ?? []).map((slot) => {
+        const firstName = slot.firstName?.trim() ?? "";
+        const lastName = slot.lastName?.trim() ?? "";
+        const bookingId = slot.bookingId?.trim();
+        return bookingId
+          ? { firstName, lastName, bookingId }
+          : { firstName, lastName };
+      }),
+    }));
+
+    const pendingBookings: Array<{
+      fieldIndex: number;
+      slotIndex: number;
+      firstName: string;
+      lastName: string;
+    }> = [];
+
+    lineupFields.forEach((field, fieldIndex) => {
+      field.slots.forEach((slot, slotIndex) => {
+        if (!isRealLineupPlayer(slot) || slot.bookingId) return;
+        pendingBookings.push({
+          fieldIndex,
+          slotIndex,
+          firstName: slot.firstName,
+          lastName: slot.lastName,
+        });
+      });
+    });
+
+    const createdBookings = await createLineupBookings({
+      eventId: String(event._id),
+      slug,
+      players: pendingBookings.map(({ firstName, lastName }) => ({
+        firstName,
+        lastName,
+      })),
+    });
+
+    if (!createdBookings.success) {
+      return {
+        success: false,
+        reason: createdBookings.reason === "event-not-found" ? "not-found" : "error",
+        message:
+          createdBookings.reason === "full"
+            ? "Not enough spots left to book all lineup players."
+            : "Could not save the lineup.",
+      };
+    }
+
+    createdBookings.data.forEach((booking, index) => {
+      const target = pendingBookings[index];
+      if (!target) return;
+      lineupFields[target.fieldIndex].slots[target.slotIndex] = {
+        ...lineupFields[target.fieldIndex].slots[target.slotIndex],
+        bookingId: booking.id,
+      };
+    });
+
+    const players = lineupSnapshotsToPlayers(lineupFields);
+    const courtsFromLineup = courtsFromLineupFields(lineupFields);
+    const courts =
+      courtsFromLineup.length > 0
+        ? normalizeCourts(courtsFromLineup)
+        : existing?.courts?.length && existing.courts.length > 0
+          ? existing.courts
+          : [{ id: createId("court"), name: "Court 1" }];
+
+    let tournament = existing;
+    if (tournament) {
+      tournament.players = players;
+      tournament.lineupFields = lineupFields;
+      tournament.courts = courts;
+      tournament.status = "setup";
+      tournament.markModified("players");
+      tournament.markModified("lineupFields");
+      tournament.markModified("courts");
+      await tournament.save();
+    } else {
+      tournament = await Tournament.create({
+        eventId: new Types.ObjectId(String(event._id)),
+        slug,
+        status: "setup",
+        tournamentType: "americano",
+        startMode: "custom",
+        pointsTo: 16,
+        resultSorting: "pointsFirst",
+        courts,
+        players,
+        lineupFields,
+        rounds: [],
+        currentRoundIndex: 0,
+      });
+    }
+
+    revalidateTournamentPaths(slug);
+    revalidatePath(`/events/${slug}/tournament/lineup`);
+    return { success: true, data: toDTO(tournament.toObject()) };
+  } catch (error) {
+    console.error("saveTournamentLineup failed", error);
+    return {
+      success: false,
+      reason: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not save the lineup.",
+    };
+  }
+}
+
 export async function createOrUpdateTournamentSetup({
   slug,
   settings,
@@ -255,26 +415,35 @@ export async function createOrUpdateTournamentSetup({
     }
 
     const participants = await getEventParticipants(String(event._id));
-    if (participants.length < 4) {
+    const existing = await Tournament.findOne({ slug });
+    const players =
+      existing?.lineupFields?.length
+        ? lineupSnapshotsToPlayers(existing.lineupFields)
+        : toTournamentPlayers(participants, existing?.players);
+
+    if (players.length < 4) {
       return {
         success: false,
         reason: "not-enough-players",
-        message: "Need at least 4 signed-up players to start a tournament.",
+        message: "Need at least 4 players to start a tournament.",
       };
     }
 
-    const courts = normalizeCourts(settings.courts);
-    if (!canStart(participants.length, courts.length)) {
+    const courtsFromSavedLineup = courtsFromLineupFields(
+      existing?.lineupFields,
+    );
+    const courts = normalizeCourts(
+      courtsFromSavedLineup.length > 0
+        ? courtsFromSavedLineup
+        : settings.courts,
+    );
+    if (!canStart(players.length, courts.length)) {
       return {
         success: false,
         reason: "not-enough-players",
         message: "Not enough players for the selected courts.",
       };
     }
-
-    const players = snapshotPlayers(participants);
-
-    const existing = await Tournament.findOne({ slug });
 
     if (existing && existing.status !== "setup") {
       return {
@@ -289,17 +458,19 @@ export async function createOrUpdateTournamentSetup({
       slug,
       status: "setup" as const,
       tournamentType: settings.tournamentType,
+      startMode: settings.startMode,
       pointsTo: settings.pointsTo,
       resultSorting: settings.resultSorting,
       courts,
       players,
+      lineupFields: existing?.lineupFields ?? [],
       rounds: [],
       currentRoundIndex: 0,
     };
 
     const tournament = existing
       ? await Tournament.findOneAndUpdate({ slug }, payload, {
-          new: true,
+          returnDocument: "after",
           runValidators: true,
         })
       : await Tournament.create(payload);
@@ -343,12 +514,11 @@ export async function startTournament(
       return { success: false, reason: "not-enough-players" };
     }
 
-    const round = generateRound({
+    const round = generateOpeningRound({
       players: tournament.players,
       courts: tournament.courts,
-      previousRounds: [],
-      tournamentType: tournament.tournamentType,
-      resultSorting: tournament.resultSorting,
+      lineupFields: tournament.lineupFields,
+      startMode: tournament.startMode ?? "custom",
       roundIndex: 0,
     });
 
@@ -361,7 +531,14 @@ export async function startTournament(
     return { success: true, data: toDTO(tournament.toObject()) };
   } catch (error) {
     console.error("startTournament failed", error);
-    return { success: false, reason: "error" };
+    return {
+      success: false,
+      reason: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not start tournament.",
+    };
   }
 }
 

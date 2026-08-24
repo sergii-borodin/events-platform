@@ -652,6 +652,39 @@
     @apply text-light-200 mt-0.5 block text-xs font-normal;
   }
 
+  .tournament-select-field {
+    @apply flex max-w-md flex-col gap-1;
+
+    span {
+      @apply text-light-200 text-xs font-medium tracking-wide uppercase;
+    }
+  }
+
+  .tournament-select {
+    @apply bg-dark-200 text-light-100 w-full rounded-[6px] px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2;
+  }
+
+  .tournament-court-preview {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
+  }
+
+  .tournament-court-preview__court {
+    @apply bg-dark-200/50 border-dark-200 rounded-[8px] border p-3;
+
+    h4 {
+      @apply font-schibsted-grotesk mb-2 text-sm font-semibold;
+    }
+
+    ol {
+      @apply m-0 grid grid-cols-2 gap-1 p-0;
+      list-style: none;
+    }
+
+    li {
+      @apply bg-dark-200/80 text-light-100 rounded-[6px] px-2 py-1.5 text-xs;
+    }
+  }
+
   .tournament-court-list {
     @apply mb-3 flex flex-col gap-2;
 
@@ -682,6 +715,135 @@
     span {
       @apply text-light-200/70 mr-1 tabular-nums;
     }
+  }
+
+  .tournament-players-preview__top {
+    @apply mb-3 flex flex-wrap items-center justify-between gap-3;
+
+    h3 {
+      @apply mb-0;
+    }
+  }
+
+  .lineup-form {
+    @apply gap-5;
+  }
+
+  .lineup-form__count {
+    @apply text-primary mt-2 text-sm font-medium;
+  }
+
+  .lineup-form__success {
+    @apply text-sm font-medium text-emerald-400;
+  }
+
+  .lineup-form__actions {
+    @apply border-t border-white/10 pt-4;
+  }
+
+  .lineup-fields {
+    @apply grid grid-cols-1 gap-4 xl:grid-cols-2;
+  }
+
+  .lineup-court {
+    @apply bg-dark-200/40 border-dark-200 flex flex-col gap-4 rounded-[10px] border p-4 transition-colors;
+  }
+
+  .lineup-court.is-drop-target {
+    @apply border-primary/60 bg-primary/10;
+  }
+
+  .lineup-court__header {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .lineup-court__name {
+    @apply w-full sm:max-w-sm;
+
+    span {
+      @apply text-light-200 mb-1 text-xs font-medium tracking-wide uppercase;
+    }
+  }
+
+  .lineup-court__count {
+    @apply text-primary text-sm font-semibold;
+  }
+
+  .lineup-court__surface {
+    @apply relative grid gap-3;
+  }
+
+  .lineup-court__side {
+    @apply flex flex-col gap-2;
+  }
+
+  .lineup-court__side-label {
+    @apply text-light-200 text-[11px] font-medium tracking-wide uppercase;
+  }
+
+  .lineup-court__slots {
+    @apply grid grid-cols-1 gap-2 sm:grid-cols-2;
+  }
+
+  .lineup-court__net {
+    @apply bg-primary/30 my-0.5 h-px w-full;
+
+    span {
+      @apply hidden;
+    }
+  }
+
+  .lineup-slot {
+    @apply bg-dark-200/70 border-dark-200 grid items-start gap-2 rounded-[8px] border px-2 py-2;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+  }
+
+  .lineup-slot.is-dragging {
+    @apply border-primary/50 bg-primary/10 opacity-80;
+  }
+
+  .lineup-slot.is-drop-target {
+    @apply border-primary ring-primary/40 ring-2;
+  }
+
+  .lineup-slot.is-empty {
+    @apply border-dashed;
+  }
+
+  .lineup-slot__handle {
+    @apply text-light-200 hover:text-light-100 flex h-10 w-10 cursor-grab items-center justify-center rounded-[6px] border-0 bg-transparent text-base touch-none select-none disabled:cursor-not-allowed;
+  }
+
+  .lineup-slot__handle:active {
+    @apply cursor-grabbing;
+  }
+
+  .lineup-slot__fields {
+    @apply grid min-w-0 grid-cols-1 gap-2;
+  }
+
+  .lineup-slot__empty {
+    @apply text-light-200/70 col-span-full text-xs;
+  }
+
+  .lineup-field {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .lineup-field__mobile-label {
+    @apply sr-only;
+  }
+
+  .lineup-field input {
+    @apply bg-dark-200 text-light-100 w-full rounded-[6px] px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2 disabled:opacity-70;
+  }
+
+  .lineup-row__badge {
+    @apply text-primary col-span-full text-xs font-semibold;
+  }
+
+  .lineup-row__remove {
+    @apply col-span-full w-full px-3 py-2 text-xs;
   }
 
   .tournament-confirm {
