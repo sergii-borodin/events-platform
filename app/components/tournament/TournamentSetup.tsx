@@ -10,6 +10,7 @@ import type {
 import type { PointsTo, ResultSorting, StartMode, TournamentType } from "@/lib/tournament";
 import { PLAYERS_PER_COURT, restingCount } from "@/lib/tournament";
 import { playerDisplayName } from "@/lib/tournament/lineup";
+import PadelCourt from "./PadelCourt";
 
 const POINTS_OPTIONS: PointsTo[] = [11, 16, 21, 24, 32];
 
@@ -281,20 +282,17 @@ export default function TournamentSetup({
                 : "Rearrange lineup"}
             </Link>
           </div>
-          <div className="tournament-court-preview">
-            {lineupCourts.map((court) => (
-              <article key={court.name} className="tournament-court-preview__court">
-                <h4>{court.name}</h4>
-                <ol>
-                  {Array.from({ length: PLAYERS_PER_COURT }, (_, index) => (
-                    <li key={`${court.name}-${index}`}>
-                      {court.players[index] ?? "Empty slot"}
-                    </li>
-                  ))}
-                </ol>
-              </article>
+          <ul className="tournament-court-preview">
+            {lineupCourts.map((court, index) => (
+              <li key={`${court.name}-${index}`} className="tournament-match">
+                <PadelCourt
+                  courtName={court.name}
+                  teamA={court.players.slice(0, 2)}
+                  teamB={court.players.slice(2, 4)}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
         {confirmResting && (

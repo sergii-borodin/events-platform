@@ -665,24 +665,8 @@
   }
 
   .tournament-court-preview {
-    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
-  }
-
-  .tournament-court-preview__court {
-    @apply bg-dark-200/50 border-dark-200 rounded-[8px] border p-3;
-
-    h4 {
-      @apply font-schibsted-grotesk mb-2 text-sm font-semibold;
-    }
-
-    ol {
-      @apply m-0 grid grid-cols-2 gap-1 p-0;
-      list-style: none;
-    }
-
-    li {
-      @apply bg-dark-200/80 text-light-100 rounded-[6px] px-2 py-1.5 text-xs;
-    }
+    @apply m-0 mt-0 grid w-full list-none gap-4 overflow-visible p-0 md:gap-5;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   }
 
   .tournament-court-list {
@@ -702,18 +686,6 @@
 
     h3 {
       @apply font-schibsted-grotesk mb-2 text-base font-semibold;
-    }
-
-    ul {
-      @apply grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2;
-    }
-
-    li {
-      @apply text-light-200 text-sm;
-    }
-
-    span {
-      @apply text-light-200/70 mr-1 tabular-nums;
     }
   }
 

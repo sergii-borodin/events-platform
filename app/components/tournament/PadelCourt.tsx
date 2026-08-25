@@ -31,23 +31,23 @@ export default function PadelCourt({
   courtName,
   teamA,
   teamB,
-  teamAScore,
-  teamBScore,
-  pointsTo,
-  busy,
+  teamAScore = "",
+  teamBScore = "",
+  pointsTo = 0,
+  busy = false,
   onScoreChange,
 }: {
   courtName: string;
   teamA: string[];
   teamB: string[];
-  teamAScore: string;
-  teamBScore: string;
-  pointsTo: number;
-  busy: boolean;
-  onScoreChange: (side: "teamA" | "teamB", value: string) => void;
+  teamAScore?: string;
+  teamBScore?: string;
+  pointsTo?: number;
+  busy?: boolean;
+  onScoreChange?: (side: "teamA" | "teamB", value: string) => void;
 }) {
-  const teamALabel = teamA.join(" & ") || "Team A";
-  const teamBLabel = teamB.join(" & ") || "Team B";
+  const teamALabel = teamA.filter(Boolean).join(" & ") || "Team A";
+  const teamBLabel = teamB.filter(Boolean).join(" & ") || "Team B";
 
   return (
     <article
@@ -118,30 +118,34 @@ export default function PadelCourt({
             <CourtPlayer name={teamB[1]} team="b" position="right" />
           ) : null}
 
-          <label className="padel-court__score padel-court__score--a">
-            <input
-              type="number"
-              min={0}
-              max={pointsTo}
-              inputMode="numeric"
-              value={teamAScore}
-              onChange={(e) => onScoreChange("teamA", e.target.value)}
-              aria-label={`Score for ${teamALabel}`}
-              disabled={busy}
-            />
-          </label>
-          <label className="padel-court__score padel-court__score--b">
-            <input
-              type="number"
-              min={0}
-              max={pointsTo}
-              inputMode="numeric"
-              value={teamBScore}
-              onChange={(e) => onScoreChange("teamB", e.target.value)}
-              aria-label={`Score for ${teamBLabel}`}
-              disabled={busy}
-            />
-          </label>
+          {onScoreChange ? (
+            <>
+              <label className="padel-court__score padel-court__score--a">
+                <input
+                  type="number"
+                  min={0}
+                  max={pointsTo}
+                  inputMode="numeric"
+                  value={teamAScore}
+                  onChange={(e) => onScoreChange("teamA", e.target.value)}
+                  aria-label={`Score for ${teamALabel}`}
+                  disabled={busy}
+                />
+              </label>
+              <label className="padel-court__score padel-court__score--b">
+                <input
+                  type="number"
+                  min={0}
+                  max={pointsTo}
+                  inputMode="numeric"
+                  value={teamBScore}
+                  onChange={(e) => onScoreChange("teamB", e.target.value)}
+                  aria-label={`Score for ${teamBLabel}`}
+                  disabled={busy}
+                />
+              </label>
+            </>
+          ) : null}
         </div>
       </div>
     </article>
