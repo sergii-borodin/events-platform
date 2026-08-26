@@ -4,6 +4,7 @@ export { Booking } from "./booking.model";
 // export type { BookingDocument } from "./booking.model";
 
 export { Tournament } from "./tournament.model";
+export { User } from "./user.model";
 export type {
   FeedbackTone,
   ILineupFieldSnapshot,
