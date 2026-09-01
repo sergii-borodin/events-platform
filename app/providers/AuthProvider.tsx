@@ -5,6 +5,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateProfile,
   signOut,
   User,
 } from "firebase/auth";
@@ -15,18 +16,31 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-async function establishServerSession(user: User) {
+async function establishServerSession(
+  user: User,
+  names?: { firstName: string; lastName: string },
+) {
   const idToken = await user.getIdToken();
   await fetch("/api/auth/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
+    body: JSON.stringify({
+      idToken,
+      ...(names
+        ? { firstName: names.firstName, lastName: names.lastName }
+        : {}),
+    }),
   });
 }
 
@@ -50,13 +64,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await establishServerSession(user);
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) => {
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
     const { user } = await createUserWithEmailAndPassword(
       auth,
       email,
       password,
     );
-    await establishServerSession(user);
+    await updateProfile(user, {
+      displayName: `${normalizedFirstName} ${normalizedLastName}`,
+    });
+    setUser(auth.currentUser);
+    await establishServerSession(user, {
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+    });
   };
 
   const logout = async () => {

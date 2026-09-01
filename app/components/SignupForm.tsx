@@ -9,6 +9,8 @@ interface SignupFormProps {
 }
 
 const SignupForm = ({ onSuccess }: SignupFormProps) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -28,7 +30,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
     setIsLoading(true);
 
     try {
-      await signup(email, password);
+      await signup(email, password, firstName, lastName);
       onSuccess();
     } catch {
       setErrorMessage("Could not create account. Please try again.");
@@ -43,6 +45,46 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
         <PadelCatcherLoader overlay label="Creating your account…" />
       )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="signup-first-name"
+            className="text-sm font-medium text-gray-700">
+            Name
+          </label>
+          <input
+            type="text"
+            id="signup-first-name"
+            name="firstName"
+            autoComplete="given-name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.currentTarget.value)}
+            placeholder="Enter your name"
+            required
+            disabled={isLoading}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="signup-last-name"
+            className="text-sm font-medium text-gray-700">
+            Surname
+          </label>
+          <input
+            type="text"
+            id="signup-last-name"
+            name="lastName"
+            autoComplete="family-name"
+            value={lastName}
+            onChange={(e) => setLastName(e.currentTarget.value)}
+            placeholder="Enter your surname"
+            required
+            disabled={isLoading}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          />
+        </div>
+
         <div className="flex flex-col gap-1">
           <label
             htmlFor="signup-email"
