@@ -199,14 +199,12 @@ const tournamentSchema = new Schema<ITournament, TournamentModel>(
       type: Schema.Types.ObjectId,
       ref: "Event",
       required: [true, "eventId is required."],
-      index: true,
     },
 
     slug: {
       type: String,
       required: [true, "slug is required."],
       trim: true,
-      index: true,
     },
 
     status: {
