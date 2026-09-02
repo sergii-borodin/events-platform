@@ -4,11 +4,20 @@ import { v2 as cloudinary } from "cloudinary";
 import connectDB from "@/lib/mongodb";
 import { Event } from "@/database/event.model";
 import { getEvents } from "@/lib/actions/event.actions";
+import { requireOrganizerDisplayName } from "@/lib/auth/server";
 import { parseEventFilter, toEventQuery, isCompletePostcode } from "@/lib/utils/eventFilter";
 import { geocodePostcode } from "@/lib/utils/geo";
 
 export async function POST(req: NextRequest) {
   try {
+    const organizer = await requireOrganizerDisplayName();
+    if (!organizer.ok) {
+      return NextResponse.json(
+        { message: organizer.message },
+        { status: organizer.status },
+      );
+    }
+
     await connectDB();
 
     const formData = await req.formData();
@@ -60,6 +69,7 @@ export async function POST(req: NextRequest) {
     const createdEvent = await Event.create({
       ...event,
       tags: tags,
+      organizer: organizer.displayName,
     });
 
     return NextResponse.json(
