@@ -144,16 +144,22 @@ interface CreateEventFormProps {
    * before POSTing to your API route.
    */
   onSubmit: (data: EventFormData) => void | Promise<void>;
+  organizerName: string;
 }
 
-export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
-  const [form, setForm] = useState<EventFormData>(INITIAL_FORM);
+export default function CreateEventForm({
+  onSubmit,
+  organizerName,
+}: CreateEventFormProps) {
+  const [form, setForm] = useState<EventFormData>(() => ({
+    ...INITIAL_FORM,
+    organizer: organizerName,
+  }));
   const [errors, setErrors] = useState<FormErrors>({});
   const [tagInput, setTagInput] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ---- Field helpers ---- */
@@ -240,7 +246,7 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
 
   function handleReset() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setForm(INITIAL_FORM);
+    setForm({ ...INITIAL_FORM, organizer: organizerName });
     setErrors({});
     setTagInput("");
     setPreviewUrl(null);

@@ -79,7 +79,10 @@ const CreateNewEvent = () => {
       {submitting && (
         <PadelCatcherLoader overlay label="Uploading & creating event…" />
       )}
-      <CreateEventForm onSubmit={handleCreateEvent} />
+      <CreateEventForm
+        onSubmit={handleCreateEvent}
+        organizerName={user.displayName?.trim() ?? ""}
+      />
     </>
   );
 };
