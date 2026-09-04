@@ -20,7 +20,6 @@ interface EventFormData {
   maxRating: number;
   maxParticipants: number | "";
   duration: number | "";
-  organizer: string;
   tags: string[];
 }
 
@@ -47,7 +46,6 @@ const INITIAL_FORM: EventFormData = {
   maxRating: 5,
   maxParticipants: "",
   duration: "",
-  organizer: "",
   tags: [],
 };
 
@@ -66,7 +64,6 @@ function validate(form: EventFormData): FormErrors {
   if (!form.location.trim()) errors.location = "Location is required.";
   if (!form.date) errors.date = "Date is required.";
   if (!form.time) errors.time = "Time is required.";
-  if (!form.organizer.trim()) errors.organizer = "Organizer is required.";
   if (form.tags.length === 0) errors.tags = "At least one tag is required.";
 
   if (form.duration === "" || Number(form.duration) < 60) {
@@ -144,17 +141,10 @@ interface CreateEventFormProps {
    * before POSTing to your API route.
    */
   onSubmit: (data: EventFormData) => void | Promise<void>;
-  organizerName: string;
 }
 
-export default function CreateEventForm({
-  onSubmit,
-  organizerName,
-}: CreateEventFormProps) {
-  const [form, setForm] = useState<EventFormData>(() => ({
-    ...INITIAL_FORM,
-    organizer: organizerName,
-  }));
+export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
+  const [form, setForm] = useState<EventFormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [tagInput, setTagInput] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
@@ -246,7 +236,7 @@ export default function CreateEventForm({
 
   function handleReset() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setForm({ ...INITIAL_FORM, organizer: organizerName });
+    setForm(INITIAL_FORM);
     setErrors({});
     setTagInput("");
     setPreviewUrl(null);
@@ -513,35 +503,24 @@ export default function CreateEventForm({
         <section className="ef-section">
           <p className="ef-section-label">Participants & rating</p>
 
-          <div className="ef-row-2">
-            <Field
-              label="Max participants"
-              required
-              error={errors.maxParticipants}>
-              <input
-                type="number"
-                value={form.maxParticipants}
-                min={1}
-                step={1}
-                placeholder="e.g. 32"
-                onChange={(e) =>
-                  set(
-                    "maxParticipants",
-                    e.target.value === "" ? "" : Number(e.target.value),
-                  )
-                }
-              />
-            </Field>
-
-            <Field label="Organizer" required error={errors.organizer}>
-              <input
-                type="text"
-                value={form.organizer}
-                placeholder="e.g. Padel League BCN"
-                onChange={(e) => set("organizer", e.target.value)}
-              />
-            </Field>
-          </div>
+          <Field
+            label="Max participants"
+            required
+            error={errors.maxParticipants}>
+            <input
+              type="number"
+              value={form.maxParticipants}
+              min={1}
+              step={1}
+              placeholder="e.g. 32"
+              onChange={(e) =>
+                set(
+                  "maxParticipants",
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
+              }
+            />
+          </Field>
 
           <div className="rating-grid">
             <Field label={`Min rating — ${form.minRating}`} required>

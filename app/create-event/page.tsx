@@ -37,7 +37,6 @@ const CreateNewEvent = () => {
         formData.append("maxRating", String(data.maxRating));
         formData.append("maxParticipants", String(data.maxParticipants));
         formData.append("duration", String(data.duration));
-        formData.append("organizer", data.organizer);
         formData.append("tags", JSON.stringify(data.tags));
 
         const response = await fetch("/api/events", {
@@ -79,10 +78,7 @@ const CreateNewEvent = () => {
       {submitting && (
         <PadelCatcherLoader overlay label="Uploading & creating event…" />
       )}
-      <CreateEventForm
-        onSubmit={handleCreateEvent}
-        organizerName={user.displayName?.trim() ?? ""}
-      />
+      <CreateEventForm onSubmit={handleCreateEvent} />
     </>
   );
 };

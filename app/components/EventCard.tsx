@@ -17,6 +17,7 @@ interface Props {
   bookingsCount: number;
   maxParticipants: number;
   duration: number;
+  organizer?: string;
 }
 
 const EventCard = ({
@@ -32,6 +33,7 @@ const EventCard = ({
   bookingsCount,
   maxParticipants,
   duration,
+  organizer,
 }: Props) => {
   const availableSpots = Math.max(0, maxParticipants - bookingsCount);
   return (
@@ -81,6 +83,7 @@ const EventCard = ({
           Spots: {availableSpots}/{maxParticipants}
         </p>
         <p>Duration: {duration} min</p>
+        {organizer ? <p>Hosted by {organizer}</p> : null}
       </div>
     </Link>
   );

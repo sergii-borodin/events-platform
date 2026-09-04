@@ -104,6 +104,7 @@ async function CachedEventsList({ query }: { query: EventQuery }) {
             bookingsCount={event.bookingsCount ?? 0}
             maxParticipants={event.maxParticipants}
             duration={event.duration}
+            organizer={event.organizer}
           />
         </li>
       ))}
