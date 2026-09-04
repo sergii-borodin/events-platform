@@ -152,10 +152,12 @@ async function EventDetailsContent({
               priority
             />
 
-            <section className="flex-col-gap-2">
-              <h2>Overview</h2>
-              <p>{overview}</p>
-            </section>
+            {overview.trim() && overview.trim() !== description.trim() && (
+              <section className="flex-col-gap-2">
+                <h2>Overview</h2>
+                <p>{overview}</p>
+              </section>
+            )}
 
             {tags.length > 0 && (
               <section className="flex-col-gap-2">

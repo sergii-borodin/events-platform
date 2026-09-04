@@ -26,7 +26,7 @@ const CreateNewEvent = () => {
 
         formData.append("title", data.title);
         formData.append("description", data.description);
-        formData.append("overview", data.overview);
+        formData.append("overview", data.description);
         if (data.image) formData.append("image", data.image);
         formData.append("venue", data.venue);
         formData.append("location", data.location);

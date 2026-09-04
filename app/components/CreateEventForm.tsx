@@ -9,7 +9,6 @@ import React, { useCallback, useRef, useState } from "react";
 interface EventFormData {
   title: string;
   description: string;
-  overview: string;
   image: File | null;
   venue: string;
   location: string;
@@ -35,7 +34,6 @@ const MAX_RATINGS = [1, 2, 3, 4, 5] as const;
 const INITIAL_FORM: EventFormData = {
   title: "",
   description: "",
-  overview: "",
   image: null,
   venue: "",
   location: "",
@@ -58,7 +56,6 @@ function validate(form: EventFormData): FormErrors {
 
   if (!form.title.trim()) errors.title = "Title is required.";
   if (!form.description.trim()) errors.description = "Description is required.";
-  if (!form.overview.trim()) errors.overview = "Overview is required.";
   if (!form.image) errors.image = "Image is required.";
   if (!form.venue.trim()) errors.venue = "Venue is required.";
   if (!form.location.trim()) errors.location = "Location is required.";
@@ -268,14 +265,21 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
         .ef-root .error { font-size: 12px; color: #d9534f; margin: 4px 0 0; }
         .ef-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .ef-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .ef-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+        .ef-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 34%); gap: 20px; align-items: stretch; }
+        .ef-hero-copy { display: flex; flex-direction: column; min-width: 0; }
+        .ef-hero-copy .field:last-child { flex: 1; display: flex; flex-direction: column; margin-bottom: 0; }
+        .ef-hero-copy textarea { flex: 1; min-height: 140px; }
+        .ef-hero-media { display: flex; flex-direction: column; min-width: 0; }
+        .ef-hero-media .field { flex: 1; display: flex; flex-direction: column; margin-bottom: 0; }
 
-        .drop-zone { border: 1.5px dashed var(--color-border-secondary, #ccc); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; background: var(--color-background-secondary, #f9f9f9); transition: background 0.15s; }
+        .drop-zone { border: 1.5px dashed var(--color-border-secondary, #ccc); border-radius: 12px; flex: 1; width: 100%; min-height: 180px; aspect-ratio: 410 / 300; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.25rem; text-align: center; cursor: pointer; background: var(--color-background-secondary, #f9f9f9); transition: background 0.15s; }
         .drop-zone.drag-over, .drop-zone:hover { background: var(--color-background-info, #e8f0fe); border-color: var(--color-border-info, #4a90e2); }
         .drop-zone p { font-size: 13px; color: var(--color-text-secondary, #555); margin: 6px 0 0; }
         .drop-zone p.sub { font-size: 11px; color: var(--color-text-tertiary, #999); }
         .drop-zone strong { color: var(--color-text-primary, #111); font-weight: 500; }
-        .img-preview { position: relative; margin-top: 10px; }
-        .img-preview img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; display: block; }
+        .img-preview { position: relative; flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 180px; }
+        .img-preview img { width: 100%; flex: 1; min-height: 180px; aspect-ratio: 410 / 300; object-fit: cover; border-radius: 12px; display: block; }
         .img-remove { position: absolute; top: 6px; right: 6px; background: var(--color-background-primary, #fff); border: 0.5px solid var(--color-border-secondary, #ccc); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; line-height: 1; }
         .img-remove:hover { background: #fdecea; }
         .img-name { font-size: 12px; color: var(--color-text-tertiary, #999); margin: 6px 0 0; }
@@ -307,8 +311,22 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-add { padding: 0 14px; height: 36px; font-size: 13px; white-space: nowrap; }
 
+        @media (min-width: 768px) {
+          .drop-zone,
+          .img-preview,
+          .img-preview img { aspect-ratio: auto; height: 100%; }
+        }
+        @media (max-width: 900px) {
+          .ef-row-4 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 767px) {
+          .ef-hero { grid-template-columns: 1fr; }
+          .drop-zone,
+          .img-preview,
+          .img-preview img { aspect-ratio: 410 / 300; height: auto; min-height: 0; }
+        }
         @media (max-width: 639px) {
-          .ef-row-2, .ef-row-3, .rating-grid { grid-template-columns: 1fr; }
+          .ef-row-2, .ef-row-3, .ef-row-4, .rating-grid { grid-template-columns: 1fr; }
           .form-actions { flex-direction: column-reverse; }
           .form-actions .btn { width: 100%; }
           .tag-row { flex-direction: column; }
@@ -321,95 +339,84 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
         <section className="ef-section">
           <p className="ef-section-label">Event details</p>
 
-          <Field label="Title" required error={errors.title}>
-            <input
-              type="text"
-              value={form.title}
-              placeholder="e.g. Spring Padel Masters"
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </Field>
+          <div className="ef-hero">
+            <div className="ef-hero-copy">
+              <Field label="Title" required error={errors.title}>
+                <input
+                  type="text"
+                  value={form.title}
+                  placeholder="e.g. Spring Padel Masters"
+                  onChange={(e) => set("title", e.target.value)}
+                />
+              </Field>
 
-          <Field label="Description" required error={errors.description}>
-            <textarea
-              value={form.description}
-              rows={2}
-              placeholder="Short competitive summary shown in listings…"
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </Field>
+              <Field label="Description" required error={errors.description}>
+                <textarea
+                  value={form.description}
+                  rows={5}
+                  placeholder="What players should know — format, level, and what to bring…"
+                  onChange={(e) => set("description", e.target.value)}
+                />
+              </Field>
+            </div>
 
-          <Field label="Overview" required error={errors.overview}>
-            <textarea
-              value={form.overview}
-              rows={3}
-              placeholder="Format details — group stage, playoffs, prizes…"
-              onChange={(e) => set("overview", e.target.value)}
-            />
-          </Field>
-        </section>
-
-        {/* Cover image */}
-        <section className="ef-section">
-          <p className="ef-section-label">Cover image</p>
-
-          <Field label="Image" required error={errors.image}>
-            {!previewUrl ? (
-              <div
-                className={`drop-zone${isDragOver ? " drag-over" : ""}`}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(false);
-                  const file = e.dataTransfer.files[0];
+            <div className="ef-hero-media">
+            <Field label="Cover image" required error={errors.image}>
+              {!previewUrl ? (
+                <div
+                  className={`drop-zone${isDragOver ? " drag-over" : ""}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(false);
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFile(file);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Upload event image"
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && fileInputRef.current?.click()
+                  }>
+                  <p>
+                    <strong>Drop</strong> an image, or <strong>browse</strong>
+                  </p>
+                  <p className="sub">PNG, JPG or WebP — card size, 410 × 300</p>
+                </div>
+              ) : (
+                <div className="img-preview">
+                  <img src={previewUrl} alt="Event cover preview" />
+                  <button
+                    type="button"
+                    className="img-remove"
+                    onClick={removeImage}
+                    aria-label="Remove image">
+                    ×
+                  </button>
+                  <p className="img-name">
+                    {form.image?.name} (
+                    {((form.image?.size ?? 0) / 1024).toFixed(0)} KB)
+                  </p>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
                   if (file) handleFile(file);
                 }}
-                role="button"
-                tabIndex={0}
-                aria-label="Upload event image"
-                onKeyDown={(e) =>
-                  e.key === "Enter" && fileInputRef.current?.click()
-                }>
-                <p>
-                  <strong>Drag & drop</strong> an image here, or{" "}
-                  <strong>click to browse</strong>
-                </p>
-                <p className="sub">
-                  PNG, JPG or WebP — recommended 1200 × 630 px
-                </p>
-              </div>
-            ) : (
-              <div className="img-preview">
-                <img src={previewUrl} alt="Event cover preview" />
-                <button
-                  type="button"
-                  className="img-remove"
-                  onClick={removeImage}
-                  aria-label="Remove image">
-                  ×
-                </button>
-                <p className="img-name">
-                  {form.image?.name} (
-                  {((form.image?.size ?? 0) / 1024).toFixed(0)} KB)
-                </p>
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFile(file);
-              }}
-            />
-          </Field>
+              />
+            </Field>
+            </div>
+          </div>
         </section>
 
         {/* Venue & location */}
@@ -458,9 +465,9 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
 
         {/* Date & time */}
         <section className="ef-section">
-          <p className="ef-section-label">Date & time</p>
+          <p className="ef-section-label">Schedule & capacity</p>
 
-          <div className="ef-row-3">
+          <div className="ef-row-4">
             <Field label="Date" required error={errors.date}>
               <input
                 type="date"
@@ -496,31 +503,31 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
                 }
               />
             </Field>
+
+            <Field
+              label="Max players"
+              required
+              error={errors.maxParticipants}>
+              <input
+                type="number"
+                value={form.maxParticipants}
+                min={1}
+                step={1}
+                placeholder="e.g. 32"
+                onChange={(e) =>
+                  set(
+                    "maxParticipants",
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+              />
+            </Field>
           </div>
         </section>
 
         {/* Participants & rating */}
         <section className="ef-section">
-          <p className="ef-section-label">Participants & rating</p>
-
-          <Field
-            label="Max participants"
-            required
-            error={errors.maxParticipants}>
-            <input
-              type="number"
-              value={form.maxParticipants}
-              min={1}
-              step={1}
-              placeholder="e.g. 32"
-              onChange={(e) =>
-                set(
-                  "maxParticipants",
-                  e.target.value === "" ? "" : Number(e.target.value),
-                )
-              }
-            />
-          </Field>
+          <p className="ef-section-label">Rating</p>
 
           <div className="rating-grid">
             <Field label={`Min rating — ${form.minRating}`} required>
