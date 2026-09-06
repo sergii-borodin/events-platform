@@ -224,6 +224,7 @@ export default function CreateEventForm({ onSubmit }: CreateEventFormProps) {
     setSubmitting(true);
     try {
       await onSubmit(form);
+      handleReset();
     } finally {
       setSubmitting(false);
     }
